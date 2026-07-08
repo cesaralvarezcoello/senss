@@ -97,16 +97,19 @@ jobs:
         run: |
           # 1) Plugins con KGP antiguo (Java 1.8 vs Kotlin 17): baja la validación.
           echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
-          # 2) compileSdk >= 36 (lo exige flutter_plugin_android_lifecycle) en
-          #    TODOS los módulos: los plugins (file_picker) se compilan aparte,
-          #    así que se fuerza desde el build raíz (Groovy o Kotlin DSL).
+          # 2) compileSdk >= 36 (lo exige flutter_plugin_android_lifecycle).
+          #    a) módulo app: se fija directo (evaluado desde el inicio).
+          APP_GRADLE=$(ls android/app/build.gradle android/app/build.gradle.kts 2>/dev/null | head -1)
+          sed -i -E 's/compileSdk(Version)?[[:space:]]*=?[[:space:]]*[A-Za-z0-9_.]+/compileSdk = 36/' "$APP_GRADLE"
+          #    b) módulos de plugins (file_picker, etc.): se compilan aparte, se
+          #       fuerzan desde el build raíz con afterEvaluate (Groovy o Kotlin).
           if [ -f android/build.gradle ]; then
             cat ci/compileSdk-override.gradle >> android/build.gradle
           elif [ -f android/build.gradle.kts ]; then
             cat ci/compileSdk-override.gradle.kts >> android/build.gradle.kts
           fi
-          echo "--- build raíz (últimas líneas) ---"
-          tail -n 12 android/build.gradle android/build.gradle.kts 2>/dev/null || true
+          echo "--- compileSdk en $APP_GRADLE ---"
+          grep -nE 'compileSdk' "$APP_GRADLE" || true
 
       - name: Instalar dependencias
         run: flutter pub get
@@ -178,16 +181,19 @@ jobs:
         run: |
           # 1) Plugins con KGP antiguo (Java 1.8 vs Kotlin 17): baja la validación.
           echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
-          # 2) compileSdk >= 36 (lo exige flutter_plugin_android_lifecycle) en
-          #    TODOS los módulos: los plugins (file_picker) se compilan aparte,
-          #    así que se fuerza desde el build raíz (Groovy o Kotlin DSL).
+          # 2) compileSdk >= 36 (lo exige flutter_plugin_android_lifecycle).
+          #    a) módulo app: se fija directo (evaluado desde el inicio).
+          APP_GRADLE=$(ls android/app/build.gradle android/app/build.gradle.kts 2>/dev/null | head -1)
+          sed -i -E 's/compileSdk(Version)?[[:space:]]*=?[[:space:]]*[A-Za-z0-9_.]+/compileSdk = 36/' "$APP_GRADLE"
+          #    b) módulos de plugins (file_picker, etc.): se compilan aparte, se
+          #       fuerzan desde el build raíz con afterEvaluate (Groovy o Kotlin).
           if [ -f android/build.gradle ]; then
             cat ci/compileSdk-override.gradle >> android/build.gradle
           elif [ -f android/build.gradle.kts ]; then
             cat ci/compileSdk-override.gradle.kts >> android/build.gradle.kts
           fi
-          echo "--- build raíz (últimas líneas) ---"
-          tail -n 12 android/build.gradle android/build.gradle.kts 2>/dev/null || true
+          echo "--- compileSdk en $APP_GRADLE ---"
+          grep -nE 'compileSdk' "$APP_GRADLE" || true
 
       - name: Instalar dependencias
         run: flutter pub get
