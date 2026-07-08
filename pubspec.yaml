@@ -1,0 +1,60 @@
+name: senss
+description: "Audiografías privadas y locales para preservar recuerdos (app de apoyo para personas con Alzheimer)."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Estado de la app
+  provider: ^6.1.2
+
+  # Base de datos local + rutas de archivos
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.4
+
+  # Audio: grabación (AAC/.m4a) y reproducción
+  record: ^5.1.2
+  just_audio: ^0.9.40
+
+  # Fotos: cámara / galería
+  image_picker: ^1.1.2
+
+  # Utilidades
+  intl: ^0.19.0
+  uuid: ^4.4.2
+
+  # Copia de seguridad local cifrada (exportar/importar)
+  # archive fijado a 3.x: el código de BackupService usa su API (ZipEncoder
+  # devuelve List<int>?, ArchiveFile(name, size, content)). archive 4.x rompe eso.
+  archive: ">=3.4.0 <4.0.0"   # empaqueta metadatos + fotos/audios en un ZIP
+  cryptography: ">=2.5.0 <3.0.0"  # AES-256-GCM + PBKDF2 (puro Dart)
+  file_picker: ">=8.0.0 <9.0.0"   # elegir dónde guardar / qué archivo restaurar
+
+  # --- Moderación de imágenes on-device (NSFW en TensorFlow Lite) ---
+  # Clasifica los píxeles como seguro/no-seguro en el dispositivo, sin red.
+  # El modelo .tflite se coloca en assets/models/ (ver README > Moderación).
+  tflite_flutter: ">=0.11.0 <0.12.0"
+  # image floor bajo para que el resolutor pueda elegir una versión de image
+  # que siga usando archive 3.x (las 4.x recientes migraron a archive 4).
+  image: ">=4.1.0 <5.0.0"  # decodificar y redimensionar la foto antes de inferir
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # Modelo NSFW on-device. El binario .tflite lo añade quien despliega la app
+    # (no se versiona por su tamaño/licencia). Sin él, la moderación aprueba
+    # todo y avisa en consola. Ver README > Seguridad y moderación.
+    - assets/models/
