@@ -93,8 +93,16 @@ jobs:
       # Algunos plugins (p. ej. tflite_flutter) fijan Java a 1.8 mientras Kotlin
       # usa 17 (JDK del runner); el AGP nuevo lo trata como error. Baja esa
       # validación a warning para todo el proyecto (fix global y sin editar Gradle).
-      - name: Ajustar validación de JVM target (plugins con KGP antiguo)
-        run: echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
+      - name: Ajustes de Gradle (JVM target + compileSdk)
+        run: |
+          # 1) Plugins con KGP antiguo (Java 1.8 vs Kotlin 17): baja la validación.
+          echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
+          # 2) Algunos plugins (flutter_plugin_android_lifecycle) exigen
+          #    compileSdk >= 36; fíjalo en el módulo app (Groovy o Kotlin DSL).
+          APP_GRADLE=$(ls android/app/build.gradle android/app/build.gradle.kts 2>/dev/null | head -1)
+          sed -i -E 's/compileSdk(Version)?[[:space:]]*=?[[:space:]]*[A-Za-z0-9_.]+/compileSdk = 36/' "$APP_GRADLE"
+          echo "--- compileSdk/minSdk/targetSdk en $APP_GRADLE ---"
+          grep -nE 'compileSdk|minSdk|targetSdk' "$APP_GRADLE" || true
 
       - name: Instalar dependencias
         run: flutter pub get
@@ -162,8 +170,16 @@ jobs:
           grep -q "android.permission.RECORD_AUDIO" "$MANIFEST" || \
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n    <uses-permission android:name="android.permission.CAMERA"/>' "$MANIFEST"
 
-      - name: Ajustar validación de JVM target (plugins con KGP antiguo)
-        run: echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
+      - name: Ajustes de Gradle (JVM target + compileSdk)
+        run: |
+          # 1) Plugins con KGP antiguo (Java 1.8 vs Kotlin 17): baja la validación.
+          echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
+          # 2) Algunos plugins (flutter_plugin_android_lifecycle) exigen
+          #    compileSdk >= 36; fíjalo en el módulo app (Groovy o Kotlin DSL).
+          APP_GRADLE=$(ls android/app/build.gradle android/app/build.gradle.kts 2>/dev/null | head -1)
+          sed -i -E 's/compileSdk(Version)?[[:space:]]*=?[[:space:]]*[A-Za-z0-9_.]+/compileSdk = 36/' "$APP_GRADLE"
+          echo "--- compileSdk/minSdk/targetSdk en $APP_GRADLE ---"
+          grep -nE 'compileSdk|minSdk|targetSdk' "$APP_GRADLE" || true
 
       - name: Instalar dependencias
         run: flutter pub get
