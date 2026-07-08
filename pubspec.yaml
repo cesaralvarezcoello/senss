@@ -20,7 +20,11 @@ dependencies:
   path_provider: ^2.1.4
 
   # Audio: grabación (AAC/.m4a) y reproducción
-  record: ^5.1.2
+  # record >=6.2.1: alinea sus implementaciones federadas (record_linux 1.3.x
+  # con record_platform_interface 1.6.x). En 5.x el resolutor emparejaba
+  # record_linux 0.7.2 con pi 1.6.0 y fallaba la compilación (aunque el target
+  # sea Android, Flutter compila el Dart de todas las plataformas del plugin).
+  record: ^6.2.1
   just_audio: ^0.9.40
 
   # Fotos: cámara / galería

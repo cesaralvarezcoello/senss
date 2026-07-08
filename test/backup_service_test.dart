@@ -68,7 +68,7 @@ void main() {
     return path;
   }
 
-  final createdAt = DateTime.fromMillisecondsSinceEpoch(1_700_000_000_000);
+  final createdAt = DateTime.fromMillisecondsSinceEpoch(1700000000000);
 
   MemoryWithAudios sampleItem() {
     final photoBytes = Uint8List.fromList(List.generate(300, (i) => i % 256));
