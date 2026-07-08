@@ -41,13 +41,12 @@ dependencies:
   cryptography: ">=2.5.0 <3.0.0"  # AES-256-GCM + PBKDF2 (puro Dart)
   file_picker: ">=8.0.0 <9.0.0"   # elegir dónde guardar / qué archivo restaurar
 
-  # --- Moderación de imágenes on-device (NSFW en TensorFlow Lite) ---
-  # Clasifica los píxeles como seguro/no-seguro en el dispositivo, sin red.
-  # El modelo .tflite se coloca en assets/models/ (ver README > Moderación).
-  tflite_flutter: ">=0.11.0 <0.12.0"
-  # image floor bajo para que el resolutor pueda elegir una versión de image
-  # que siga usando archive 3.x (las 4.x recientes migraron a archive 4).
-  image: ">=4.1.0 <5.0.0"  # decodificar y redimensionar la foto antes de inferir
+  # --- Moderación real on-device (NSFW en TensorFlow Lite) ---
+  # Add-on OPCIONAL, desacoplado del build por defecto: tflite_flutter 0.11.0
+  # choca con AGP 8 (namespace duplicado de los AAR de TensorFlow Lite). Para
+  # habilitarlo, ver optional/nsfw_moderation/README.md (reañade estas deps):
+  #   tflite_flutter: ">=0.11.0 <0.12.0"
+  #   image: ">=4.1.0 <5.0.0"
 
 dev_dependencies:
   flutter_test:
@@ -56,9 +55,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  assets:
-    # Modelo NSFW on-device. El binario .tflite lo añade quien despliega la app
-    # (no se versiona por su tamaño/licencia). Sin él, la moderación aprueba
-    # todo y avisa en consola. Ver README > Seguridad y moderación.
-    - assets/models/
+  # El add-on de moderación NSFW (opcional) declara aquí su asset
+  # `assets/models/` al habilitarlo. Ver optional/nsfw_moderation/README.md.

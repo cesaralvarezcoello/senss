@@ -9,7 +9,6 @@ import '../data/models/memory.dart';
 import '../data/repositories/memory_repository.dart';
 import '../data/services/backup_service.dart';
 import '../data/services/moderation_service.dart';
-import '../data/services/nsfw_moderation_service.dart';
 import '../data/services/storage_service.dart';
 
 /// Estado central del feed. Orquesta repositorio + almacenamiento de archivos
@@ -28,7 +27,7 @@ class MemoryProvider extends ChangeNotifier {
     BackupService? backup,
   })  : _repo = repository ?? MemoryRepository(),
         _storage = storage ?? StorageService(),
-        _moderation = moderation ?? NsfwModerationService(),
+        _moderation = moderation ?? PermissiveModerationService(),
         _backup = backup ??
             BackupService(
               repository: repository ?? MemoryRepository(),

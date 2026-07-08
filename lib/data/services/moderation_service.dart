@@ -19,12 +19,13 @@ abstract class ModerationService {
   Future<ModerationResult> reviewImage(File image);
 }
 
-/// Implementación que **permite todo** el contenido. Es la alternativa explícita
-/// para desactivar la moderación (p. ej. en pruebas). La detección real
-/// on-device la aporta `NsfwModerationService` (clasificador NSFW en TensorFlow
-/// Lite), que es el servicio por defecto de la app.
+/// Implementación **por defecto**: permite todo el contenido y deja el punto de
+/// integración listo. La detección real on-device es un add-on opcional,
+/// `NsfwModerationService` (clasificador NSFW en TensorFlow Lite), que vive en
+/// `optional/nsfw_moderation/` desacoplado del build por una incompatibilidad
+/// de `tflite_flutter` con AGP 8.
 ///
-/// Ver README > Seguridad y moderación.
+/// Ver README > Seguridad y moderación y `optional/nsfw_moderation/README.md`.
 class PermissiveModerationService implements ModerationService {
   @override
   Future<ModerationResult> reviewImage(File image) async {

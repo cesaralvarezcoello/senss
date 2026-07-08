@@ -92,8 +92,7 @@ lib/
 │     ├─ audio_recorder_service.dart  # Grabación AAC/.m4a (record)
 │     ├─ audio_player_service.dart    # Reproducción individual/secuencial (just_audio)
 │     ├─ backup_service.dart          # Copia de seguridad cifrada (AES-256-GCM + PBKDF2)
-│     ├─ moderation_service.dart      # Interfaz de moderación + variante permisiva
-│     └─ nsfw_moderation_service.dart # Clasificador NSFW on-device (TensorFlow Lite)
+│     └─ moderation_service.dart      # Interfaz de moderación + variante permisiva (por defecto)
 ├─ state/
 │  └─ memory_provider.dart       # Estado central (ChangeNotifier)
 ├─ utils/
@@ -115,27 +114,20 @@ lib/
 ## 7. Seguridad y moderación
 
 `ModerationService.reviewImage()` se ejecuta **antes** de guardar cualquier
-foto. El servicio por defecto es `NsfwModerationService`: un clasificador
-**NSFW en TensorFlow Lite** (`tflite_flutter`) que decide seguro/no-seguro
-sobre los píxeles, **100% en el dispositivo**. Si la foto se marca como no
-apta, `createMemory` lanza `ModerationException` y la pantalla de creación
-muestra el motivo; nada se guarda.
+foto. Si una implementación marca la foto como no apta, `createMemory` lanza
+`ModerationException` y la pantalla de creación muestra el motivo; nada se
+guarda.
 
-**Añadir el modelo (obligatorio para que filtre de verdad):**
+El servicio por defecto es `PermissiveModerationService` (aprueba todo), que
+deja el punto de integración listo.
 
-1. Consigue un modelo `.tflite` de clasificación NSFW y guárdalo como
-   `assets/models/nsfw.tflite` (ver `assets/models/README.md` para los formatos
-   de salida compatibles: 1 valor sigmoide, 2 clases o 5 clases estilo
-   GantMan).
-2. `flutter pub get` — el asset ya está declarado en `pubspec.yaml`.
-3. Si tu modelo usa otra entrada/normalización/umbral, ajústalo al construir
-   `NsfwModerationService(...)` (índices de clases no-seguras, `threshold`,
-   `normalization`, tamaño de entrada leído del propio modelo).
-
-**Degradación segura:** sin el modelo la app compila y funciona, pero la
-moderación aprueba todo y avisa en consola. Usa `blockOnUnavailable: true` para
-fallar cerrado, o `PermissiveModerationService` para desactivarla (p. ej. en
-pruebas).
+**Moderación real on-device (add-on opcional).** Existe
+`NsfwModerationService`: un clasificador **NSFW en TensorFlow Lite** que decide
+seguro/no-seguro sobre los píxeles, 100% en el dispositivo, con degradación
+segura si falta el modelo. Está **desacoplado del build por defecto** porque
+`tflite_flutter` 0.11.0 es incompatible con AGP 8 (namespace duplicado de los
+AAR de TensorFlow Lite). El código, sus tests y las instrucciones para
+habilitarlo viven en `optional/nsfw_moderation/` (ver su `README.md`).
 
 Para el audio: términos de uso claros antes de grabar (`AppConstants
 .audioTermsShort`) y categorización con etiquetas de emociones positivas.
@@ -166,7 +158,9 @@ a un único archivo `.senssbak` **cifrado con contraseña**, y restaurarlo.
 - ✅ Barra de progreso/scrubber en la reproducción.
 - ✅ Editar/eliminar audiografías individuales.
 - ✅ Copia de seguridad local cifrada (exportar/importar).
-- ✅ Integrar la moderación real on-device (sección 7).
+- ✅ Moderación real on-device (add-on en `optional/nsfw_moderation/`; ver §7).
+  Pendiente: compatibilidad de `tflite_flutter` con AGP 8 para integrarla por
+  defecto.
 
 ## 10. Integración continua (CI)
 
