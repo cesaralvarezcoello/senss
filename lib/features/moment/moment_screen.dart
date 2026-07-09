@@ -20,6 +20,7 @@ import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
 import '../../state/profile_store.dart';
 import '../../utils/time_ago.dart';
+import '../activities/fog_reveal_screen.dart';
 import '../activities/play_memory_screen.dart';
 import '../feed/feed_screen.dart';
 
@@ -93,9 +94,15 @@ class _MomentScreenState extends State<MomentScreen> {
 
   void _openGame(MemoryWithAudios m) {
     _player.stop();
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PlayMemoryScreen(item: m)),
-    );
+    final feed = context.read<MemoryProvider>().feed;
+    // Si el recuerdo tiene con qué preguntar (voces, o falta la descripción),
+    // "La niebla que se despeja"; si no, el rompecabezas de la foto.
+    final fogMaterial = m.audios.isNotEmpty ||
+        (m.memory.description?.trim().isEmpty ?? true);
+    final Widget game = fogMaterial
+        ? FogRevealScreen(item: m, feed: feed)
+        : PlayMemoryScreen(item: m);
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => game));
   }
 
   Future<void> _extractColor(String ref) async {
