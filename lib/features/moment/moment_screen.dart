@@ -294,8 +294,9 @@ class _MomentScreenState extends State<MomentScreen> {
         ),
         Semantics(
           button: true,
-          label: 'Para la familia. Mantén pulsado para entrar.',
+          label: 'Para la familia.',
           child: GestureDetector(
+            onTap: _openCaregiver,
             onLongPress: _openCaregiver,
             child: ClipOval(
               child: BackdropFilter(
