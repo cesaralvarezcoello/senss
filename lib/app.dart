@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/constants.dart';
 import 'design/app_theme.dart';
-import 'features/feed/feed_screen.dart';
+import 'features/moment/moment_screen.dart';
 
 class SenssApp extends StatelessWidget {
   const SenssApp({super.key});
@@ -15,7 +15,9 @@ class SenssApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.system,
-      home: const FeedScreen(),
+      // Pantalla principal = modo paciente ("Un momento"). El modo familia
+      // (FeedScreen) se abre desde ahí con un gesto discreto y gateado.
+      home: const MomentScreen(),
     );
   }
 }

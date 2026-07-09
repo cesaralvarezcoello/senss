@@ -30,6 +30,9 @@ dependencies:
   # Fotos: cámara / galería
   image_picker: ^1.1.2
 
+  # Color dinámico: extrae el color dominante de cada foto para teñir la UI
+  palette_generator: ^0.3.3
+
   # Utilidades
   intl: ^0.19.0
   uuid: ^4.4.2
