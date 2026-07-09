@@ -1,24 +1,26 @@
-import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/emotions.dart';
+import '../../data/media/media_store.dart';
 import '../../data/models/audiography.dart';
 import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_glass.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
 import '../../utils/time_ago.dart';
 import '../feed/feed_screen.dart';
 
-/// Pantalla principal (modo paciente): UN recuerdo a la vez, a pantalla
-/// completa. La voz de quien amas se reproduce sola; un solo botón enorme.
-/// Le recuerda quién es y cuándo fue. El color de la foto tiñe todo el ambiente.
+/// Modo paciente: UN recuerdo a la vez, a pantalla completa. El fondo es la
+/// propia foto desenfocada (ambiente), la foto nítida flota encima, y la voz
+/// querida se reproduce sola. Todo con cristal y el color de la foto.
 class MomentScreen extends StatefulWidget {
   const MomentScreen({super.key});
 
@@ -40,9 +42,6 @@ class _MomentScreenState extends State<MomentScreen> {
     super.dispose();
   }
 
-  // ---- Datos derivados ----
-
-  /// Divide "Carlos, tu hijo" en nombre y relación.
   static (String, String) _split(String author) {
     final parts = author.split(',');
     final name = parts.first.trim();
@@ -50,8 +49,6 @@ class _MomentScreenState extends State<MomentScreen> {
     return (name.isEmpty ? author.trim() : name, rel);
   }
 
-  /// Audiografía "activa": la que suena ahora (si es de este recuerdo) o la
-  /// primera del recuerdo.
   Audiography? _activeAudio(MemoryWithAudios m) {
     if (m.audios.isEmpty) return null;
     final path = _player.currentPath;
@@ -68,12 +65,8 @@ class _MomentScreenState extends State<MomentScreen> {
     return path != null && m.audios.any((a) => a.audioPath == path);
   }
 
-  // ---- Efectos al mostrar un recuerdo ----
-
   void _onMemoryShown(MemoryWithAudios m) {
     _extractColor(m.memory.photoPath);
-    // Reproduce las voces del recuerdo automáticamente (la magia: toca... o ni
-    // eso: suena solo al abrir).
     if (m.audios.isNotEmpty) {
       _player.playSequence(m.audios.map((a) => a.audioPath).toList());
     } else {
@@ -81,11 +74,12 @@ class _MomentScreenState extends State<MomentScreen> {
     }
   }
 
-  Future<void> _extractColor(String photoPath) async {
+  Future<void> _extractColor(String ref) async {
     try {
+      final provider = await Media.store.imageProvider(ref);
       final palette = await PaletteGenerator.fromImageProvider(
-        FileImage(File(photoPath)),
-        size: const Size(220, 220),
+        provider,
+        size: const Size(200, 200),
         maximumColorCount: 8,
       );
       final base = palette.vibrantColor?.color ??
@@ -93,24 +87,15 @@ class _MomentScreenState extends State<MomentScreen> {
           palette.mutedColor?.color;
       if (base == null || !mounted) return;
       final hsl = HSLColor.fromColor(base);
-      // Sube saturación y controla luminosidad para un ambiente cálido.
-      final amb = hsl
-          .withSaturation((hsl.saturation + 0.1).clamp(0.35, 1.0))
-          .withLightness(hsl.lightness.clamp(0.45, 0.62))
-          .toColor();
-      final amb2 = hsl
-          .withLightness((hsl.lightness - 0.2).clamp(0.2, 0.5))
-          .toColor();
       setState(() {
-        _amb = amb;
-        _amb2 = amb2;
+        _amb = hsl
+            .withSaturation((hsl.saturation + 0.1).clamp(0.4, 1.0))
+            .withLightness(hsl.lightness.clamp(0.45, 0.62))
+            .toColor();
+        _amb2 = hsl.withLightness((hsl.lightness - 0.22).clamp(0.2, 0.5)).toColor();
       });
-    } catch (_) {
-      // Si falla, se queda el ambiente por defecto.
-    }
+    } catch (_) {}
   }
-
-  // ---- Navegación / control ----
 
   void _next(int length) {
     _player.stop();
@@ -164,8 +149,6 @@ class _MomentScreenState extends State<MomentScreen> {
     return 'Buenas noches';
   }
 
-  // ---- UI ----
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<MemoryProvider>();
@@ -182,7 +165,6 @@ class _MomentScreenState extends State<MomentScreen> {
     final index = _index.clamp(0, feed.length - 1);
     final m = feed[index];
 
-    // Al cambiar de recuerdo: extrae color y reproduce.
     if (m.memory.id != _shownId) {
       _shownId = m.memory.id;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -195,52 +177,50 @@ class _MomentScreenState extends State<MomentScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Foto a pantalla completa (con transición suave entre recuerdos).
-          AnimatedSwitcher(
-            duration: AppMotion.slow,
-            child: Image.file(
-              File(m.memory.photoPath),
-              key: ValueKey(m.memory.id),
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  const ColoredBox(color: Color(0xFF1A1410)),
+          // Fondo: la propia foto, desenfocada y ampliada.
+          ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 45, sigmaY: 45, tileMode: TileMode.clamp),
+            child: Transform.scale(
+              scale: 1.2,
+              child: RefImage(m.memory.photoPath, fit: BoxFit.cover),
             ),
           ),
-          // Velo para legibilidad.
-          const DecoratedBox(
+          // Oscurecido + brillo de ambiente (color de la foto).
+          DecoratedBox(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0x8C000000), Color(0x00000000), Color(0x00000000), Color(0xE0000000)],
-                stops: [0.0, 0.22, 0.42, 1.0],
+              gradient: RadialGradient(
+                center: const Alignment(0, -0.7),
+                radius: 1.3,
+                colors: [
+                  _amb.withValues(alpha: 0.28),
+                  Colors.black.withValues(alpha: 0.62),
+                ],
+                stops: const [0.0, 1.0],
               ),
             ),
-            child: SizedBox.expand(),
-          ),
-          // Brillo de ambiente (color de la foto) arriba.
-          IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -1.1),
-                  radius: 1.1,
-                  colors: [_amb.withValues(alpha: 0.34), Colors.transparent],
-                ),
-              ),
-              child: const SizedBox.expand(),
-            ),
+            child: const SizedBox.expand(),
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
               child: Column(
                 children: [
                   _topBar(),
-                  const Spacer(),
+                  const SizedBox(height: AppSpace.md),
+                  Expanded(child: Center(child: _hero(m))),
+                  const SizedBox(height: AppSpace.lg),
                   _playControl(m),
-                  const Spacer(),
-                  _bottom(m, feed.length),
+                  const SizedBox(height: AppSpace.lg),
+                  _nameplate(m),
+                  if (feed.length > 1) ...[
+                    const SizedBox(height: AppSpace.md),
+                    AppButton(
+                      label: 'Otro recuerdo',
+                      icon: Icons.arrow_forward_rounded,
+                      variant: AppButtonVariant.glass,
+                      onPressed: () => _next(feed.length),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -265,25 +245,93 @@ class _MomentScreenState extends State<MomentScreen> {
             ],
           ),
         ),
-        // Acceso discreto y gateado al modo familia (mantener pulsado).
         Semantics(
           button: true,
           label: 'Para la familia. Mantén pulsado para entrar.',
           child: GestureDetector(
             onLongPress: _openCaregiver,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.14),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                  ),
+                  child: const Icon(Icons.more_horiz, color: Colors.white),
+                ),
               ),
-              child: const Icon(Icons.more_horiz, color: Colors.white),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  // La foto nítida "flota" sobre su versión desenfocada.
+  Widget _hero(MemoryWithAudios m) {
+    return LayoutBuilder(
+      builder: (ctx, cons) {
+        final w = cons.maxWidth;
+        final h = cons.maxHeight;
+        // Encaja una tarjeta 4:5 dentro del espacio disponible.
+        var cardW = w;
+        var cardH = cardW * 5 / 4;
+        if (cardH > h) {
+          cardH = h;
+          cardW = cardH * 4 / 5;
+        }
+        return Container(
+          width: cardW,
+          height: cardH,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: [
+              BoxShadow(
+                color: _amb.withValues(alpha: 0.45),
+                blurRadius: 60,
+                spreadRadius: -6,
+              ),
+              const BoxShadow(
+                color: Color(0x99000000),
+                blurRadius: 30,
+                offset: Offset(0, 18),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              RefImage(m.memory.photoPath, fit: BoxFit.cover),
+              // Título sobre un degradado inferior.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x00000000), Color(0xB3000000)],
+                    stops: [0.55, 1.0],
+                  ),
+                ),
+                child: SizedBox.expand(),
+              ),
+              Positioned(
+                left: 18,
+                right: 18,
+                bottom: 16,
+                child: AppText(m.memory.title,
+                    variant: AppTextVariant.titleL,
+                    tone: AppTone.onPhoto,
+                    maxLines: 2),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -302,60 +350,69 @@ class _MomentScreenState extends State<MomentScreen> {
             GestureDetector(
               onTap: hasVoices ? () => _togglePlay(m) : null,
               child: SizedBox(
-                width: 168,
-                height: 168,
+                width: 116,
+                height: 116,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     if (playingHere)
                       SizedBox(
-                        width: 168,
-                        height: 168,
+                        width: 116,
+                        height: 116,
                         child: _ProgressRing(player: _player, color: _amb),
                       )
                     else
                       SizedBox(
-                        width: 168,
-                        height: 168,
+                        width: 116,
+                        height: 116,
                         child: CircularProgressIndicator(
                           value: 1,
-                          strokeWidth: 5,
+                          strokeWidth: 4,
                           valueColor: AlwaysStoppedAnimation(
-                              Colors.white.withValues(alpha: hasVoices ? 0.28 : 0.14)),
-                          backgroundColor: Colors.white.withValues(alpha: 0.08),
+                              Colors.white.withValues(alpha: hasVoices ? 0.3 : 0.12)),
+                          backgroundColor: Colors.white.withValues(alpha: 0.06),
                         ),
                       ),
-                    Container(
-                      width: 128,
-                      height: 128,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: hasVoices
-                              ? [_amb, _amb2]
-                              : [const Color(0xFF4A423B), const Color(0xFF2C2622)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _amb.withValues(alpha: hasVoices ? 0.5 : 0.0),
-                            blurRadius: 40,
-                            spreadRadius: 2,
+                    ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                        child: Container(
+                          width: 92,
+                          height: 92,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: hasVoices
+                                  ? [
+                                      _amb.withValues(alpha: 0.92),
+                                      _amb2.withValues(alpha: 0.92)
+                                    ]
+                                  : [
+                                      Colors.white.withValues(alpha: 0.18),
+                                      Colors.white.withValues(alpha: 0.1)
+                                    ],
+                            ),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.5),
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                        size: 66,
-                        color: Colors.white,
+                          child: Icon(
+                            isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            size: 48,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSpace.lg),
+            const SizedBox(height: AppSpace.md),
             AppText(
               hasVoices
                   ? (isPlaying
@@ -372,107 +429,64 @@ class _MomentScreenState extends State<MomentScreen> {
     );
   }
 
-  Widget _bottom(MemoryWithAudios m, int total) {
-    final active = _activeAudio(m);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // El "momento": título grande.
-        AppText(
-          m.memory.title,
-          variant: AppTextVariant.display,
-          tone: AppTone.onPhoto,
-          maxLines: 2,
-        ),
-        const SizedBox(height: AppSpace.md),
-        // Placa de cristal: quién es y cuándo (orientación).
-        if (active != null)
-          AnimatedBuilder(
-            animation: _player,
-            builder: (context, _) {
-              final a = _activeAudio(m) ?? active;
-              final (n, r) = _split(a.authorName);
-              final s = EmotionStyle.of(a.emotionTag);
-              return AppGlass(
-                tint: _amb.withValues(alpha: 0.18),
-                borderColor: Colors.white.withValues(alpha: 0.22),
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [_amb, _amb2]),
-                      ),
-                      alignment: Alignment.center,
-                      child: AppText(
-                        n.isEmpty ? '♪' : n.substring(0, 1).toUpperCase(),
-                        variant: AppTextVariant.titleM,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpace.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText(n,
-                              variant: AppTextVariant.titleM,
-                              tone: AppTone.onPhoto,
-                              maxLines: 1),
-                          if (r.isNotEmpty)
-                            AppText(r,
-                                variant: AppTextVariant.caption,
-                                tone: AppTone.onPhoto,
-                                maxLines: 1),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('${s.emoji}', style: const TextStyle(fontSize: 20)),
-                        const SizedBox(height: 2),
-                        AppText(TimeAgo.short(a.createdAt),
-                            variant: AppTextVariant.caption,
-                            tone: AppTone.onPhoto),
-                      ],
-                    ),
-                  ],
+  Widget _nameplate(MemoryWithAudios m) {
+    return AnimatedBuilder(
+      animation: _player,
+      builder: (context, _) {
+        final a = _activeAudio(m);
+        if (a == null) return const SizedBox.shrink();
+        final (n, r) = _split(a.authorName);
+        final s = EmotionStyle.of(a.emotionTag);
+        return AppGlass(
+          tint: _amb.withValues(alpha: 0.20),
+          borderColor: Colors.white.withValues(alpha: 0.22),
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [_amb, _amb2]),
                 ),
-              );
-            },
-          ),
-        const SizedBox(height: AppSpace.md),
-        // Un solo control: otro recuerdo.
-        if (total > 1)
-          AppGlass(
-            radius: AppRadius.lg,
-            tint: Colors.white.withValues(alpha: 0.10),
-            padding: EdgeInsets.zero,
-            child: Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                onTap: () => _next(total),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AppText('Otro recuerdo',
-                          variant: AppTextVariant.label, tone: AppTone.onPhoto),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
-                    ],
-                  ),
+                alignment: Alignment.center,
+                child: AppText(
+                  n.isEmpty ? '♪' : n.substring(0, 1).toUpperCase(),
+                  variant: AppTextVariant.titleM,
+                  color: Colors.white,
                 ),
               ),
-            ),
+              const SizedBox(width: AppSpace.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText(n,
+                        variant: AppTextVariant.titleM,
+                        tone: AppTone.onPhoto,
+                        maxLines: 1),
+                    if (r.isNotEmpty)
+                      AppText(r,
+                          variant: AppTextVariant.caption,
+                          tone: AppTone.onPhoto,
+                          maxLines: 1),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(s.emoji, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(height: 2),
+                  AppText(TimeAgo.short(a.createdAt),
+                      variant: AppTextVariant.caption, tone: AppTone.onPhoto),
+                ],
+              ),
+            ],
           ),
-      ],
+        );
+      },
     );
   }
 
@@ -516,7 +530,6 @@ class _MomentScreenState extends State<MomentScreen> {
   }
 }
 
-/// Anillo de progreso alrededor del botón de reproducir (sigue a la voz).
 class _ProgressRing extends StatelessWidget {
   final AudioPlayerService player;
   final Color color;
@@ -537,9 +550,9 @@ class _ProgressRing extends StatelessWidget {
                 maxMs <= 0 ? null : (pos.inMilliseconds / maxMs).clamp(0.0, 1.0);
             return CircularProgressIndicator(
               value: value,
-              strokeWidth: 5,
+              strokeWidth: 4,
               valueColor: AlwaysStoppedAnimation(color),
-              backgroundColor: Colors.white.withValues(alpha: 0.14),
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
             );
           },
         );

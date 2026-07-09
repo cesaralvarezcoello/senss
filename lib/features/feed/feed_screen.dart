@@ -10,6 +10,7 @@ import '../../state/memory_provider.dart';
 import '../activities/activities_hub_screen.dart';
 import '../backup/backup_screen.dart';
 import '../create/create_memory_screen.dart';
+import '../dev/sample_data.dart';
 import 'widgets/memory_card.dart';
 
 /// Pantalla principal: un feed vertical y cálido de recuerdos.
@@ -47,6 +48,16 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  bool _seeding = false;
+  Future<void> _seed() async {
+    setState(() => _seeding = true);
+    try {
+      await seedSampleData(context.read<MemoryProvider>());
+    } finally {
+      if (mounted) setState(() => _seeding = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -74,7 +85,8 @@ class _FeedScreenState extends State<FeedScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (provider.feed.isEmpty) {
-            return _EmptyState(onCreate: _openCreate);
+            return _EmptyState(
+                onCreate: _openCreate, onSeed: _seed, seeding: _seeding);
           }
           return RefreshIndicator(
             color: c.accent,
@@ -134,7 +146,10 @@ class _FeedHeader extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final VoidCallback onCreate;
-  const _EmptyState({required this.onCreate});
+  final VoidCallback onSeed;
+  final bool seeding;
+  const _EmptyState(
+      {required this.onCreate, required this.onSeed, required this.seeding});
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +189,15 @@ class _EmptyState extends StatelessWidget {
               icon: Icons.add_a_photo_outlined,
               expand: false,
               onPressed: onCreate,
+            ),
+            const SizedBox(height: AppSpace.md),
+            AppButton(
+              label: 'Cargar ejemplos',
+              icon: Icons.auto_awesome_rounded,
+              variant: AppButtonVariant.ghost,
+              expand: false,
+              busy: seeding,
+              onPressed: onSeed,
             ),
           ],
         ),
