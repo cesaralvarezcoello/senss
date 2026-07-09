@@ -343,10 +343,6 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      # Copia el worker + WASM de sqflite web a web/.
-      - name: Preparar sqflite web
-        run: dart run sqflite_common_ffi_web:setup
-
       - name: Construir web
         run: flutter build web --release --base-href /senss/
 

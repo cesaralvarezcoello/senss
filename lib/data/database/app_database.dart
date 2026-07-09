@@ -1,8 +1,9 @@
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/audiography.dart';
 import '../models/memory.dart';
-import 'db_init.dart';
 
 /// Inicializa y expone la base de datos SQLite local (100% en el dispositivo).
 ///
@@ -22,8 +23,8 @@ class AppDatabase {
   }
 
   Future<Database> _open() async {
-    await configureDatabase();
-    final path = await databasePath(_dbName);
+    final dir = await getApplicationDocumentsDirectory();
+    final path = p.join(dir.path, _dbName);
 
     return openDatabase(
       path,

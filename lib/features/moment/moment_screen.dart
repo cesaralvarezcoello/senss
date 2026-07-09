@@ -238,9 +238,9 @@ class _MomentScreenState extends State<MomentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText(_greeting,
+              AppText('$_greeting 💛',
                   variant: AppTextVariant.titleM, tone: AppTone.onPhoto),
-              const AppText('Un recuerdo para ti',
+              const AppText('Alguien que te quiere pensó en ti',
                   variant: AppTextVariant.caption, tone: AppTone.onPhoto),
             ],
           ),
@@ -416,9 +416,9 @@ class _MomentScreenState extends State<MomentScreen> {
             AppText(
               hasVoices
                   ? (isPlaying
-                      ? 'Escuchando a $name…'
-                      : 'Toca para escuchar${name.isEmpty ? '' : ' a $name'}')
-                  : 'Aún no hay voces en este recuerdo',
+                      ? 'La voz de $name, contigo'
+                      : 'Toca y escucha${name.isEmpty ? '' : ' a $name'}')
+                  : 'Este recuerdo todavía espera una voz 💛',
               variant: AppTextVariant.bodyStrong,
               tone: AppTone.onPhoto,
               align: TextAlign.center,
@@ -503,13 +503,14 @@ class _MomentScreenState extends State<MomentScreen> {
                 Icon(Icons.favorite_rounded,
                     size: 72, color: _amb.withValues(alpha: 0.9)),
                 const SizedBox(height: AppSpace.xl),
-                const AppText('Aún no hay recuerdos',
+                const AppText('Aquí vivirán tus recuerdos',
                     variant: AppTextVariant.titleL,
                     tone: AppTone.onPhoto,
                     align: TextAlign.center),
                 const SizedBox(height: AppSpace.md),
                 const AppText(
-                  'La familia puede añadir la primera foto y grabarle una voz.',
+                  'Tu familia irá guardando las fotos y las voces de quienes '
+                  'te quieren, para acompañarte.',
                   variant: AppTextVariant.body,
                   tone: AppTone.onPhoto,
                   align: TextAlign.center,

@@ -1,96 +1,31 @@
-import 'package:sqflite/sqflite.dart';
-
-import '../database/app_database.dart';
 import '../models/audiography.dart';
 import '../models/memory.dart';
+import '../models/memory_with_audios.dart';
+import 'repo_backend.dart';
 
-/// Un recuerdo junto con todas sus audiografías, listo para mostrar en el feed.
-class MemoryWithAudios {
-  final Memory memory;
-  final List<Audiography> audios;
-  const MemoryWithAudios(this.memory, this.audios);
-}
+export '../models/memory_with_audios.dart';
 
-/// Acceso a datos para recuerdos y audiografías. Toda la persistencia es local.
+/// Acceso a datos de recuerdos y audiografías. Delega en el backend agnóstico
+/// (sqflite en móvil, IndexedDB en web). Toda la persistencia es local.
 class MemoryRepository {
-  final AppDatabase _db;
-  MemoryRepository([AppDatabase? db]) : _db = db ?? AppDatabase.instance;
+  final RepoBackend _backend;
+  MemoryRepository([RepoBackend? backend])
+      : _backend = backend ?? createDefaultRepoBackend();
 
-  Future<void> insertMemory(Memory memory) async {
-    final db = await _db.database;
-    await db.insert(
-      Memory.table,
-      memory.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+  Future<void> insertMemory(Memory memory) => _backend.insertMemory(memory);
 
-  Future<void> insertAudiography(Audiography audio) async {
-    final db = await _db.database;
-    await db.insert(
-      Audiography.table,
-      audio.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+  Future<void> insertAudiography(Audiography audio) =>
+      _backend.insertAudiography(audio);
 
-  /// Feed principal: recuerdos más recientes primero, cada uno con sus audios
-  /// ordenados cronológicamente (el primero grabado arriba).
-  Future<List<MemoryWithAudios>> getFeed() async {
-    final db = await _db.database;
+  Future<List<MemoryWithAudios>> getFeed() => _backend.getFeed();
 
-    final memoryRows = await db.query(
-      Memory.table,
-      orderBy: 'created_at DESC',
-    );
-    if (memoryRows.isEmpty) return [];
+  Future<List<Audiography>> getAudiographies(String memoryId) =>
+      _backend.getAudiographies(memoryId);
 
-    final audioRows = await db.query(
-      Audiography.table,
-      orderBy: 'created_at ASC',
-    );
+  Future<void> updateAudiography(Audiography audio) =>
+      _backend.updateAudiography(audio);
 
-    final grouped = <String, List<Audiography>>{};
-    for (final row in audioRows) {
-      final audio = Audiography.fromMap(row);
-      grouped.putIfAbsent(audio.memoryId, () => []).add(audio);
-    }
+  Future<void> deleteMemory(String id) => _backend.deleteMemory(id);
 
-    return memoryRows.map((row) {
-      final memory = Memory.fromMap(row);
-      return MemoryWithAudios(memory, grouped[memory.id] ?? const []);
-    }).toList();
-  }
-
-  Future<List<Audiography>> getAudiographies(String memoryId) async {
-    final db = await _db.database;
-    final rows = await db.query(
-      Audiography.table,
-      where: 'memory_id = ?',
-      whereArgs: [memoryId],
-      orderBy: 'created_at ASC',
-    );
-    return rows.map(Audiography.fromMap).toList();
-  }
-
-  Future<void> deleteMemory(String id) async {
-    final db = await _db.database;
-    // ON DELETE CASCADE elimina también las audiografías asociadas.
-    await db.delete(Memory.table, where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<void> updateAudiography(Audiography audio) async {
-    final db = await _db.database;
-    await db.update(
-      Audiography.table,
-      audio.toMap(),
-      where: 'id = ?',
-      whereArgs: [audio.id],
-    );
-  }
-
-  Future<void> deleteAudiography(String id) async {
-    final db = await _db.database;
-    await db.delete(Audiography.table, where: 'id = ?', whereArgs: [id]);
-  }
+  Future<void> deleteAudiography(String id) => _backend.deleteAudiography(id);
 }

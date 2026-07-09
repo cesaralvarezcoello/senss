@@ -52,18 +52,46 @@ Future<Uint8List> _gradientPng(Color a, Color b) async {
   const size = 900.0;
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  final paint = Paint()
-    ..shader = ui.Gradient.linear(
-        const Offset(0, 0), const Offset(size, size), [a, b]);
-  canvas.drawRect(const Rect.fromLTWH(0, 0, size, size), paint);
   final rnd = Random(a.toARGB32() ^ b.toARGB32());
-  for (var i = 0; i < 7; i++) {
+
+  // Base: degradado cálido.
+  canvas.drawRect(
+    const Rect.fromLTWH(0, 0, size, size),
+    Paint()
+      ..shader = ui.Gradient.linear(
+          const Offset(0, 0), const Offset(size, size), [a, b]),
+  );
+
+  // Brillos de colores vivos, mezclados de forma aditiva (más luminoso).
+  final baseHue = HSLColor.fromColor(a).hue;
+  for (var i = 0; i < 5; i++) {
+    final hue = (baseHue + i * 67) % 360;
+    final glow = HSLColor.fromAHSL(1, hue, 0.85, 0.6).toColor();
+    final center = Offset(rnd.nextDouble() * size, rnd.nextDouble() * size);
+    final radius = size * (0.28 + rnd.nextDouble() * 0.32);
     canvas.drawCircle(
-      Offset(rnd.nextDouble() * size, rnd.nextDouble() * size),
-      50 + rnd.nextDouble() * 130,
-      Paint()..color = Colors.white.withValues(alpha: 0.10),
+      center,
+      radius,
+      Paint()
+        ..blendMode = BlendMode.plus
+        ..shader = ui.Gradient.radial(center, radius, [
+          glow.withValues(alpha: 0.55),
+          glow.withValues(alpha: 0.0),
+        ]),
     );
   }
+
+  // Destellos suaves (bokeh).
+  for (var i = 0; i < 9; i++) {
+    canvas.drawCircle(
+      Offset(rnd.nextDouble() * size, rnd.nextDouble() * size),
+      18 + rnd.nextDouble() * 70,
+      Paint()
+        ..blendMode = BlendMode.plus
+        ..color = Colors.white.withValues(alpha: 0.06 + rnd.nextDouble() * 0.12),
+    );
+  }
+
   final img =
       await recorder.endRecording().toImage(size.toInt(), size.toInt());
   final data = await img.toByteData(format: ui.ImageByteFormat.png);

@@ -15,9 +15,8 @@ dependencies:
   provider: ^6.1.2
 
   # Base de datos local + rutas de archivos
-  sqflite: ^2.3.3
-  sqflite_common_ffi_web: ^0.4.3   # sqflite en la web (IndexedDB/WASM)
-  idb_shim: ^2.6.0                  # almacén de bytes multiplataforma (web/io)
+  sqflite: ^2.3.3                   # base de datos en móvil/escritorio
+  idb_shim: ^2.6.0                  # IndexedDB en web (datos + medios)
   path: ^1.9.0
   path_provider: ^2.1.4
 
