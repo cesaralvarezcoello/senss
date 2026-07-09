@@ -13,25 +13,28 @@ class SenssApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ProfileStore>(
       create: (_) => ProfileStore()..load(),
-      child: MaterialApp(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
-        // Escala global de texto según la edad del perfil (centralizado):
-        // la tercera edad ve todo más grande, sin tocar cada pantalla.
-        builder: (context, child) {
-          final scale = context.watch<ProfileStore>().profile.textScale;
-          final mq = MediaQuery.of(context);
-          return MediaQuery(
-            data: mq.copyWith(textScaler: TextScaler.linear(scale)),
-            child: child!,
+      // Consumer envuelve toda la MaterialApp: al cambiar el perfil se
+      // reconstruye y aplica la nueva escala de texto (edad) en toda la app.
+      child: Consumer<ProfileStore>(
+        builder: (context, store, _) {
+          return MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: ThemeMode.system,
+            builder: (context, child) {
+              final mq = MediaQuery.of(context);
+              return MediaQuery(
+                data: mq.copyWith(
+                  textScaler: TextScaler.linear(store.profile.textScale),
+                ),
+                child: child!,
+              );
+            },
+            home: const MomentScreen(),
           );
         },
-        // Pantalla principal = modo paciente ("Un momento"). El modo familia
-        // (FeedScreen) se abre desde ahí con un gesto discreto y gateado.
-        home: const MomentScreen(),
       ),
     );
   }

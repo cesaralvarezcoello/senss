@@ -343,8 +343,16 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      # --pwa-strategy=none: sin service worker, así la web nunca queda cacheada
+      # con una versión vieja (cada carga trae lo último).
       - name: Construir web
-        run: flutter build web --release --base-href /senss/
+        run: flutter build web --release --base-href /senss/ --pwa-strategy=none
+
+      # Desregistra cualquier service worker viejo que quedó en navegadores que
+      # visitaron versiones anteriores (auto-limpieza).
+      - name: Limpiar service workers antiguos
+        run: |
+          sed -i 's#</head>#<script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}</script></head>#' build/web/index.html
 
       - name: Configurar Pages
         uses: actions/configure-pages@v5

@@ -22,11 +22,11 @@ class Profile {
   bool get isSenior => age == AgeGroup.senior;
   bool get isYoung => age == AgeGroup.young;
 
-  /// Escala global de texto: la tercera edad ve todo más grande.
+  /// Escala global de texto: la tercera edad ve todo bastante más grande.
   double get textScale => switch (age) {
-        AgeGroup.senior => 1.18,
+        AgeGroup.senior => 1.35,
         AgeGroup.adult => 1.0,
-        AgeGroup.young => 1.0,
+        AgeGroup.young => 0.92,
       };
 
   /// Tamaño base de iconos y objetivos táctiles.
