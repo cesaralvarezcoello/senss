@@ -1,5 +1,9 @@
 # senss
 
+<p align="center">
+  <img src="docs/marketing/momento.png" alt="senss — la pantalla Momento: el rostro de la abuela formado por un mosaico de fotos, rodeado de las voces de la familia" width="360">
+</p>
+
 Audiografías privadas y locales para preservar recuerdos — una app de apoyo,
 sin fines de lucro, para personas con Alzheimer.
 
