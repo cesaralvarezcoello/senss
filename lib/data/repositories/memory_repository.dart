@@ -26,6 +26,8 @@ class MemoryRepository {
   Future<void> updateAudiography(Audiography audio) =>
       _backend.updateAudiography(audio);
 
+  Future<void> updateMemory(Memory memory) => _backend.updateMemory(memory);
+
   Future<void> deleteMemory(String id) => _backend.deleteMemory(id);
 
   Future<void> deleteAudiography(String id) => _backend.deleteAudiography(id);

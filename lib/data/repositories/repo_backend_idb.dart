@@ -117,6 +117,9 @@ class IdbRepoBackend implements RepoBackend {
   }
 
   @override
+  Future<void> updateMemory(Memory memory) => _put(_mem, memory.toMap());
+
+  @override
   Future<void> deleteMemory(String id) async {
     await _delete(_mem, id);
     for (final a in await _all(_aud)) {

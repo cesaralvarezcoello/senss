@@ -15,6 +15,7 @@ abstract class RepoBackend {
   Future<List<MemoryWithAudios>> getFeed();
   Future<List<Audiography>> getAudiographies(String memoryId);
   Future<void> updateAudiography(Audiography audio);
+  Future<void> updateMemory(Memory memory);
   Future<void> deleteMemory(String id);
   Future<void> deleteAudiography(String id);
 

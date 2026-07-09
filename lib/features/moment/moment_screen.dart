@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
 import '../../state/profile_store.dart';
 import '../../utils/time_ago.dart';
+import '../activities/play_memory_screen.dart';
 import '../feed/feed_screen.dart';
 
 /// Modo paciente: UN recuerdo a la vez, a pantalla completa. El fondo es la
@@ -39,6 +41,7 @@ class _MomentScreenState extends State<MomentScreen> {
   Color _amb = const Color(0xFFE08A2E);
   Color _amb2 = const Color(0xFFC7562F);
   AppCopy _copy = const AppCopy(Profile());
+  final _rand = Random();
 
   @override
   void dispose() {
@@ -76,6 +79,23 @@ class _MomentScreenState extends State<MomentScreen> {
     } else {
       _player.stop();
     }
+    // De vez en cuando, invita a jugar con este recuerdo (sin obligar).
+    if (_rand.nextInt(3) == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('¿Jugamos con este recuerdo? 🧩'),
+          action: SnackBarAction(label: 'Jugar', onPressed: () => _openGame(m)),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _openGame(MemoryWithAudios m) {
+    _player.stop();
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PlayMemoryScreen(item: m)),
+    );
   }
 
   Future<void> _extractColor(String ref) async {
@@ -217,15 +237,30 @@ class _MomentScreenState extends State<MomentScreen> {
                   _playControl(m),
                   const SizedBox(height: AppSpace.lg),
                   _nameplate(m),
-                  if (feed.length > 1) ...[
-                    const SizedBox(height: AppSpace.md),
-                    AppButton(
-                      label: _copy.otherMemory,
-                      icon: Icons.arrow_forward_rounded,
-                      variant: AppButtonVariant.glass,
-                      onPressed: () => _next(feed.length),
-                    ),
-                  ],
+                  const SizedBox(height: AppSpace.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'Jugar',
+                          icon: Icons.extension_rounded,
+                          variant: AppButtonVariant.glass,
+                          onPressed: () => _openGame(m),
+                        ),
+                      ),
+                      if (feed.length > 1) ...[
+                        const SizedBox(width: AppSpace.md),
+                        Expanded(
+                          child: AppButton(
+                            label: _copy.otherMemory,
+                            icon: Icons.arrow_forward_rounded,
+                            variant: AppButtonVariant.glass,
+                            onPressed: () => _next(feed.length),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),

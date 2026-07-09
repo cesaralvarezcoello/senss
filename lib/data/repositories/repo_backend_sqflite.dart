@@ -63,6 +63,13 @@ class SqfliteRepoBackend implements RepoBackend {
   }
 
   @override
+  Future<void> updateMemory(Memory memory) async {
+    final db = await _db.database;
+    await db.update(Memory.table, memory.toMap(),
+        where: 'id = ?', whereArgs: [memory.id]);
+  }
+
+  @override
   Future<void> deleteMemory(String id) async {
     final db = await _db.database;
     // ON DELETE CASCADE elimina también las audiografías asociadas.

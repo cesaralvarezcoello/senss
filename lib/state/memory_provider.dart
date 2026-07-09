@@ -156,6 +156,12 @@ class MemoryProvider extends ChangeNotifier {
     await loadFeed();
   }
 
+  /// Actualiza los datos de un recuerdo (p. ej. completar la descripción).
+  Future<void> updateMemory(Memory memory) async {
+    await _repo.updateMemory(memory);
+    await loadFeed();
+  }
+
   Future<void> deleteMemory(Memory memory) async {
     final audios = await _repo.getAudiographies(memory.id);
     await _repo.deleteMemory(memory.id);
