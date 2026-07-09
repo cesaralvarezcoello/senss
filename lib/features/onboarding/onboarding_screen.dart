@@ -10,8 +10,9 @@ import '../../design/components/app_text.dart';
 import '../../design/tokens.dart';
 import '../../state/profile_store.dart';
 
-/// Bienvenida sentimental: fondo cálido animado y, en el corazón, una página
-/// donde se **siente** el poder de una voz querida (onda que late + sonido).
+/// Bienvenida sentimental y **visual primero** (imágenes sobre texto, ideal
+/// para personas con Alzheimer). Escenas pintadas y animadas; en el corazón,
+/// una página donde se **siente** el poder de una voz (onda que late + sonido).
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -37,8 +38,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ..repeat();
     _voice = _synthVoice();
     _player.playerStateStream.listen((s) {
-      final playing = s.playing && s.processingState != ProcessingState.completed;
-      if (mounted && playing != _playing) setState(() => _playing = playing);
+      final p = s.playing && s.processingState != ProcessingState.completed;
+      if (mounted && p != _playing) setState(() => _playing = p);
     });
   }
 
@@ -66,8 +67,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _nextOrFinish() {
     if (_page < _last) {
-      _pages.nextPage(
-          duration: AppMotion.base, curve: AppMotion.curve);
+      _pages.nextPage(duration: AppMotion.base, curve: AppMotion.curve);
     } else {
       _finish();
     }
@@ -80,11 +80,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Fondo cálido con orbes que respiran.
           AnimatedBuilder(
             animation: _anim,
-            builder: (_, __) =>
-                CustomPaint(painter: _OrbPainter(_anim.value)),
+            builder: (_, __) => CustomPaint(painter: _OrbPainter(_anim.value)),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(
@@ -104,24 +102,36 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     controller: _pages,
                     onPageChanged: (i) => setState(() => _page = i),
                     children: [
-                      _Page(
-                        emoji: '🕯️',
-                        title: 'Bienvenido a senss',
-                        body: 'Un lugar seguro para guardar y revivir los '
-                            'recuerdos más queridos.',
+                      _ScenePage(
+                        title: 'Tus recuerdos, a salvo',
+                        scene: AnimatedBuilder(
+                          animation: _anim,
+                          builder: (_, __) => CustomPaint(
+                            size: const Size(220, 220),
+                            painter: _FramePainter(_anim.value),
+                          ),
+                        ),
                       ),
                       _voicePage(),
-                      _Page(
-                        emoji: '🌳',
+                      _ScenePage(
                         title: 'Toda una vida, en un lugar',
-                        body: 'Fotos y voces que se acumulan con los años: un '
-                            'tesoro para acompañar hoy… y para heredar mañana.',
+                        scene: AnimatedBuilder(
+                          animation: _anim,
+                          builder: (_, __) => CustomPaint(
+                            size: const Size(260, 220),
+                            painter: _ConstellationPainter(_anim.value),
+                          ),
+                        ),
                       ),
-                      _Page(
-                        emoji: '💛',
+                      _ScenePage(
                         title: 'Juntos, sin prisa',
-                        body: 'Jugar, recordar y sentir. Aquí nunca se falla y '
-                            'nada se pierde.',
+                        scene: AnimatedBuilder(
+                          animation: _anim,
+                          builder: (_, __) => CustomPaint(
+                            size: const Size(240, 220),
+                            painter: _HeartsPainter(_anim.value),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -164,7 +174,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  // La página del corazón: el poder de la voz, para sentirlo.
   Widget _voicePage() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -179,24 +188,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
           ),
           const SizedBox(height: AppSpace.xl),
-          const AppText('Una voz tiene poder',
+          const AppText('Una voz que abraza',
               variant: AppTextVariant.display,
               tone: AppTone.onPhoto,
               align: TextAlign.center),
-          const SizedBox(height: AppSpace.md),
-          const AppText(
-            'La voz de quien amas puede despertar un recuerdo dormido. '
-            'Tócala y siéntelo.',
-            variant: AppTextVariant.body,
-            tone: AppTone.onPhoto,
-            align: TextAlign.center,
-          ),
+          const SizedBox(height: AppSpace.sm),
+          const AppText('Tócala y siéntelo',
+              variant: AppTextVariant.body,
+              tone: AppTone.onPhoto,
+              align: TextAlign.center),
         ],
       ),
     );
   }
 
-  /// Sintetiza una melodía cálida (WAV PCM16 mono) para "la voz".
   Uint8List _synthVoice() {
     const sr = 22050;
     const seconds = 4.0;
@@ -234,11 +239,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-class _Page extends StatelessWidget {
-  final String emoji;
+/// Página visual: una escena grande arriba y un título corto abajo. Sin
+/// párrafos: la imagen manda.
+class _ScenePage extends StatelessWidget {
+  final Widget scene;
   final String title;
-  final String body;
-  const _Page({required this.emoji, required this.title, required this.body});
+  const _ScenePage({required this.scene, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -247,15 +253,10 @@ class _Page extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 92)),
-          const SizedBox(height: AppSpace.xl),
+          scene,
+          const SizedBox(height: AppSpace.xxl),
           AppText(title,
               variant: AppTextVariant.display,
-              tone: AppTone.onPhoto,
-              align: TextAlign.center),
-          const SizedBox(height: AppSpace.md),
-          AppText(body,
-              variant: AppTextVariant.body,
               tone: AppTone.onPhoto,
               align: TextAlign.center),
         ],
@@ -264,7 +265,139 @@ class _Page extends StatelessWidget {
   }
 }
 
-/// Orbe de voz que late y muestra una onda alrededor.
+// ------- Escenas pintadas -------
+
+Path _heartPath(Size s) {
+  final p = Path();
+  p.moveTo(s.width * 0.5, s.height * 0.35);
+  p.cubicTo(s.width * 0.2, -s.height * 0.02, -s.width * 0.25, s.height * 0.55,
+      s.width * 0.5, s.height);
+  p.cubicTo(s.width * 1.25, s.height * 0.55, s.width * 0.8, -s.height * 0.02,
+      s.width * 0.5, s.height * 0.35);
+  p.close();
+  return p;
+}
+
+/// Escena 1: un marco de foto cálido con un corazón que late dentro.
+class _FramePainter extends CustomPainter {
+  final double t;
+  _FramePainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final r = Rect.fromLTWH(size.width * 0.1, size.height * 0.08,
+        size.width * 0.8, size.height * 0.84);
+    // Foto (degradado cálido).
+    final photo = RRect.fromRectAndRadius(r, const Radius.circular(22));
+    canvas.drawRRect(
+      photo,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE9A23B), Color(0xFFC7562F)],
+        ).createShader(r),
+    );
+    // Marco.
+    canvas.drawRRect(
+      photo,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6
+        ..color = Colors.white.withValues(alpha: 0.85),
+    );
+    // Corazón que late.
+    final pulse = 1 + 0.08 * sin(t * 2 * pi * 2);
+    final hs = Size(size.width * 0.34 * pulse, size.height * 0.32 * pulse);
+    canvas.save();
+    canvas.translate(size.width * 0.5 - hs.width / 2,
+        size.height * 0.44 - hs.height / 2);
+    canvas.drawPath(
+      _heartPath(hs),
+      Paint()
+        ..color = Colors.white
+        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 4),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_FramePainter old) => true;
+}
+
+/// Escena 3: una constelación de recuerdos a lo largo de una vida.
+class _ConstellationPainter extends CustomPainter {
+  final double t;
+  _ConstellationPainter(this.t);
+
+  static const _pts = <Offset>[
+    Offset(0.1, 0.7), Offset(0.28, 0.4), Offset(0.45, 0.62),
+    Offset(0.6, 0.3), Offset(0.75, 0.55), Offset(0.9, 0.28),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Offset p(int i) => Offset(_pts[i].dx * size.width, _pts[i].dy * size.height);
+    // Hilo.
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = Colors.white.withValues(alpha: 0.25);
+    for (var i = 0; i < _pts.length - 1; i++) {
+      canvas.drawLine(p(i), p(i + 1), line);
+    }
+    // Estrellas que brillan.
+    for (var i = 0; i < _pts.length; i++) {
+      final glow = 0.5 + 0.5 * sin(t * 2 * pi + i);
+      canvas.drawCircle(
+        p(i),
+        6 + 4 * glow,
+        Paint()
+          ..color = const Color(0xFFF0A344).withValues(alpha: 0.5 + 0.4 * glow)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+      canvas.drawCircle(p(i), 4, Paint()..color = Colors.white);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ConstellationPainter old) => true;
+}
+
+/// Escena 4: corazones juntos.
+class _HeartsPainter extends CustomPainter {
+  final double t;
+  _HeartsPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final specs = [
+      [0.32, 0.55, 0.5, const Color(0xFFE5484D)],
+      [0.62, 0.5, 0.44, const Color(0xFFE86A9B)],
+      [0.5, 0.68, 0.4, const Color(0xFFF0A344)],
+    ];
+    for (var i = 0; i < specs.length; i++) {
+      final s = specs[i];
+      final float = 0.03 * sin(t * 2 * pi + i * 1.6);
+      final hs = Size(size.width * (s[2] as double), size.height * (s[2] as double));
+      canvas.save();
+      canvas.translate(size.width * (s[0] as double) - hs.width / 2,
+          size.height * ((s[1] as double) + float) - hs.height / 2);
+      canvas.drawPath(
+        _heartPath(hs),
+        Paint()
+          ..color = (s[3] as Color).withValues(alpha: 0.9)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HeartsPainter old) => true;
+}
+
+/// Orbe de voz que late y muestra ondas alrededor.
 class _VoiceOrb extends StatelessWidget {
   final double t;
   final bool playing;
@@ -274,16 +407,16 @@ class _VoiceOrb extends StatelessWidget {
   Widget build(BuildContext context) {
     final pulse = 1 + 0.06 * sin(t * 2 * pi * 2);
     return SizedBox(
-      width: 190,
-      height: 190,
+      width: 200,
+      height: 200,
       child: CustomPaint(
         painter: _WavePainter(t, playing),
         child: Center(
           child: Transform.scale(
             scale: playing ? pulse : 1,
             child: Container(
-              width: 118,
-              height: 118,
+              width: 120,
+              height: 120,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -292,11 +425,13 @@ class _VoiceOrb extends StatelessWidget {
                   colors: [Color(0xFFF0A344), Color(0xFFC7562F)],
                 ),
                 boxShadow: [
-                  BoxShadow(color: Color(0x66E08A2E), blurRadius: 40, spreadRadius: 4),
+                  BoxShadow(color: Color(0x66E08A2E), blurRadius: 44, spreadRadius: 4),
                 ],
               ),
-              child: Icon(playing ? Icons.graphic_eq_rounded : Icons.play_arrow_rounded,
-                  color: Colors.white, size: 54),
+              child: Icon(
+                  playing ? Icons.graphic_eq_rounded : Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 56),
             ),
           ),
         ),
@@ -313,16 +448,19 @@ class _WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final base = size.width * 0.34;
+    final base = size.width * 0.32;
     for (var ring = 0; ring < 3; ring++) {
       final phase = (t + ring / 3) % 1;
       final r = base + phase * base * 0.9;
       final opacity = (1 - phase) * (playing ? 0.5 : 0.22);
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
-        ..color = const Color(0xFFF0A344).withValues(alpha: opacity);
-      canvas.drawCircle(center, r, paint);
+      canvas.drawCircle(
+        center,
+        r,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5
+          ..color = const Color(0xFFF0A344).withValues(alpha: opacity),
+      );
     }
   }
 
@@ -351,18 +489,22 @@ class _OrbPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final o in _orbs) {
-      final cx = size.width * (o.dx + 0.05 * sin(t * 2 * pi * o.speed + o.phase * 6));
-      final cy = size.height *
-          (o.dy + 0.05 * cos(t * 2 * pi * o.speed + o.phase * 6));
+      final cx =
+          size.width * (o.dx + 0.05 * sin(t * 2 * pi * o.speed + o.phase * 6));
+      final cy =
+          size.height * (o.dy + 0.05 * cos(t * 2 * pi * o.speed + o.phase * 6));
       final radius = size.width * o.radius;
       final center = Offset(cx, cy);
-      final paint = Paint()
-        ..blendMode = BlendMode.plus
-        ..shader = RadialGradient(colors: [
-          o.color.withValues(alpha: 0.35),
-          o.color.withValues(alpha: 0.0),
-        ]).createShader(Rect.fromCircle(center: center, radius: radius));
-      canvas.drawCircle(center, radius, paint);
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..blendMode = BlendMode.plus
+          ..shader = RadialGradient(colors: [
+            o.color.withValues(alpha: 0.35),
+            o.color.withValues(alpha: 0.0),
+          ]).createShader(Rect.fromCircle(center: center, radius: radius)),
+      );
     }
   }
 
