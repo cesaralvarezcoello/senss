@@ -294,22 +294,35 @@ class _MomentScreenState extends State<MomentScreen> {
         ),
         Semantics(
           button: true,
-          label: 'Para la familia.',
+          label: 'Modo familia',
           child: GestureDetector(
             onTap: _openCaregiver,
-            onLongPress: _openCaregiver,
-            child: ClipOval(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Container(
-                  width: 46,
-                  height: 46,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    color: Colors.white.withValues(alpha: 0.16),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.28)),
                   ),
-                  child: const Icon(Icons.more_horiz, color: Colors.white),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.people_alt_rounded,
+                          color: Colors.white, size: 20),
+                      SizedBox(width: 6),
+                      Text('Familia',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15)),
+                    ],
+                  ),
                 ),
               ),
             ),
