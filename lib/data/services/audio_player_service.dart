@@ -76,7 +76,11 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   /// Reproduce varias audiografías en secuencia (el "hilo" de audio-recuerdos).
-  Future<void> playSequence(List<String> refs) async {
+  ///
+  /// [autostart] permite **cargar sin arrancar**: en web los navegadores
+  /// bloquean la reproducción automática sin un gesto del usuario, así que se
+  /// deja la cola lista y el primer toque de play (gesto) la inicia.
+  Future<void> playSequence(List<String> refs, {bool autostart = true}) async {
     if (refs.isEmpty) return;
     await _player.stop();
     final sources = <AudioSource>[];
@@ -93,7 +97,7 @@ class AudioPlayerService extends ChangeNotifier {
     _index = 0;
     await _player.setAudioSource(ConcatenatingAudioSource(children: sources));
     notifyListeners();
-    await _player.play();
+    if (autostart) await _player.play();
   }
 
   Future<void> pause() async {

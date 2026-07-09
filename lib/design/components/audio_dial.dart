@@ -171,36 +171,41 @@ class _AudioDialState extends State<AudioDial> {
     return SizedBox(
       width: d,
       height: d,
-      child: GestureDetector(
-        onPanStart: (e) => _panStart(e, d),
-        onPanUpdate: (e) => _panUpdate(e, d),
-        onPanEnd: _panEnd,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            CustomPaint(
-              size: Size(d, d),
-              painter: _DialPainter(
-                count: widget.count,
-                index: _display.toDouble(),
-                progress: widget.playing ? widget.progress : 0,
-                color: widget.color,
-                playing: widget.playing,
-                enabled: widget.enabled,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // La rueda (giro) ocupa todo el cuadrado, debajo del orbe.
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (e) => _panStart(e, d),
+              onPanUpdate: (e) => _panUpdate(e, d),
+              onPanEnd: _panEnd,
+              child: CustomPaint(
+                painter: _DialPainter(
+                  count: widget.count,
+                  index: _display.toDouble(),
+                  progress: widget.playing ? widget.progress : 0,
+                  color: widget.color,
+                  playing: widget.playing,
+                  enabled: widget.enabled,
+                ),
               ),
             ),
-            GestureDetector(
-              onTap: widget.enabled && widget.count > 0 ? widget.onPlayPause : null,
-              child: _Orb(
-                diameter: orb,
-                color: widget.color,
-                color2: widget.color2,
-                playing: widget.playing,
-                enabled: widget.enabled && widget.count > 0,
-              ),
+          ),
+          // El orbe de play/pausa va encima: su toque no llega a la rueda.
+          GestureDetector(
+            onTap:
+                widget.enabled && widget.count > 0 ? widget.onPlayPause : null,
+            child: _Orb(
+              diameter: orb,
+              color: widget.color,
+              color2: widget.color2,
+              playing: widget.playing,
+              enabled: widget.enabled && widget.count > 0,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

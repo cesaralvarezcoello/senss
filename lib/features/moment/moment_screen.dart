@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:provider/provider.dart';
@@ -79,7 +80,10 @@ class _MomentScreenState extends State<MomentScreen> {
   void _onMemoryShown(MemoryWithAudios m) {
     _extractColor(m.memory.photoPath);
     if (m.audios.isNotEmpty) {
-      _player.playSequence(m.audios.map((a) => a.audioPath).toList());
+      // En web se carga sin arrancar (el navegador bloquea el autoplay sin
+      // gesto); el primer toque de play lo inicia. En móvil arranca solo.
+      _player.playSequence(m.audios.map((a) => a.audioPath).toList(),
+          autostart: !kIsWeb);
     } else {
       _player.stop();
     }
