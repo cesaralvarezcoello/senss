@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/constants.dart';
-import 'core/theme.dart';
+import 'design/app_theme.dart';
 import 'features/feed/feed_screen.dart';
 
 class SenssApp extends StatelessWidget {
@@ -13,6 +13,8 @@ class SenssApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       home: const FeedScreen(),
     );
   }
