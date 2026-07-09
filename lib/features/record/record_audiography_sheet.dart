@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
+import '../../data/media/media_store.dart';
 import '../../data/services/audio_recorder_service.dart';
-import '../../data/services/storage_service.dart';
 import '../../state/memory_provider.dart';
 
 /// Hoja inferior para grabar una audiografía y adjuntarla a un recuerdo.
@@ -20,7 +20,6 @@ enum _Stage { intro, recording, review }
 
 class _RecordAudiographySheetState extends State<RecordAudiographySheet> {
   final _recorder = AudioRecorderService();
-  final _storage = StorageService();
   final _authorController = TextEditingController();
 
   _Stage _stage = _Stage.intro;
@@ -42,7 +41,11 @@ class _RecordAudiographySheetState extends State<RecordAudiographySheet> {
       _snack('Necesitamos permiso para usar el micrófono.');
       return;
     }
-    final path = await _storage.newAudioPath();
+    final path = await Media.store.newRecordingPath();
+    if (path == null) {
+      _snack('La grabación aún no está disponible en el navegador.');
+      return;
+    }
     await _recorder.start(path);
     setState(() {
       _stage = _Stage.recording;

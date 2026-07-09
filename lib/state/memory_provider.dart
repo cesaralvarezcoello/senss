@@ -1,38 +1,31 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/media/media_store.dart';
 import '../data/models/audiography.dart';
 import '../data/models/memory.dart';
 import '../data/repositories/memory_repository.dart';
 import '../data/services/backup_service.dart';
 import '../data/services/moderation_service.dart';
-import '../data/services/storage_service.dart';
 
-/// Estado central del feed. Orquesta repositorio + almacenamiento de archivos
-/// + moderación, y notifica a la UI cuando cambian los recuerdos.
+/// Estado central del feed. Orquesta repositorio + almacenamiento de medios
+/// (agnóstico) + moderación, y notifica a la UI cuando cambian los recuerdos.
 class MemoryProvider extends ChangeNotifier {
   final MemoryRepository _repo;
-  final StorageService _storage;
   final ModerationService _moderation;
   final BackupService _backup;
   static const _uuid = Uuid();
 
   MemoryProvider({
     MemoryRepository? repository,
-    StorageService? storage,
     ModerationService? moderation,
     BackupService? backup,
   })  : _repo = repository ?? MemoryRepository(),
-        _storage = storage ?? StorageService(),
         _moderation = moderation ?? PermissiveModerationService(),
         _backup = backup ??
-            BackupService(
-              repository: repository ?? MemoryRepository(),
-              storage: storage ?? StorageService(),
-            );
+            BackupService(repository: repository ?? MemoryRepository());
 
   List<MemoryWithAudios> _feed = const [];
   List<MemoryWithAudios> get feed => _feed;
@@ -48,24 +41,25 @@ class MemoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Crea un recuerdo a partir de una foto ya tomada/importada.
+  /// Crea un recuerdo a partir de los bytes de una foto (tomada/importada).
   /// Devuelve el recuerdo creado, o lanza [ModerationException] si la imagen
   /// no pasa la moderación local.
   Future<Memory> createMemory({
-    required String sourcePhotoPath,
+    required Uint8List photoBytes,
+    String ext = 'jpg',
     required String title,
     String? description,
   }) async {
-    final review = await _moderation.reviewImage(File(sourcePhotoPath));
+    final review = await _moderation.reviewImage(photoBytes);
     if (!review.allowed) {
       throw ModerationException(review.reason ??
           'La imagen no cumple con las normas del entorno seguro.');
     }
 
-    final storedPath = await _storage.savePhoto(sourcePhotoPath);
+    final ref = await Media.store.savePhoto(photoBytes, ext: ext);
     final memory = Memory(
       id: _uuid.v4(),
-      photoPath: storedPath,
+      photoPath: ref,
       title: title.trim(),
       description: description?.trim().isEmpty ?? true
           ? null
@@ -78,8 +72,7 @@ class MemoryProvider extends ChangeNotifier {
     return memory;
   }
 
-  /// Registra una audiografía ya grabada (archivo en [audioPath]) para un
-  /// recuerdo existente.
+  /// Registra una audiografía ya grabada (referencia en [audioPath]).
   Future<void> addAudiography({
     required String memoryId,
     required String audioPath,
@@ -116,33 +109,29 @@ class MemoryProvider extends ChangeNotifier {
     await loadFeed();
   }
 
-  /// Elimina una sola audiografía (fila + archivo de audio del dispositivo).
+  /// Elimina una sola audiografía (fila + medio).
   Future<void> deleteAudiography(Audiography audio) async {
     await _repo.deleteAudiography(audio.id);
-    await _storage.deleteFile(audio.audioPath);
+    await Media.store.delete(audio.audioPath);
     await loadFeed();
   }
 
   Future<void> deleteMemory(Memory memory) async {
     final audios = await _repo.getAudiographies(memory.id);
     await _repo.deleteMemory(memory.id);
-    await _storage.deleteFile(memory.photoPath);
+    await Media.store.delete(memory.photoPath);
     for (final audio in audios) {
-      await _storage.deleteFile(audio.audioPath);
+      await Media.store.delete(audio.audioPath);
     }
     await loadFeed();
   }
 
   // --- Copia de seguridad local cifrada ---
 
-  /// Genera una copia cifrada de todos los recuerdos. Devuelve los bytes (para
-  /// que la pantalla los guarde donde el usuario elija) y un resumen.
   Future<(Uint8List, BackupStats)> createBackup(String password) {
     return _backup.exportEncrypted(password);
   }
 
-  /// Restaura una copia cifrada y recarga el feed. Los elementos se fusionan
-  /// por id (restaurar dos veces es seguro).
   Future<BackupStats> restoreBackup(Uint8List bytes, String password) async {
     final stats = await _backup.importEncrypted(bytes, password);
     await loadFeed();

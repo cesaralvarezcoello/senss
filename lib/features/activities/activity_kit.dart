@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,6 +7,7 @@ import '../../data/models/memory.dart';
 import '../../data/repositories/memory_repository.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 
 /// Una "voz" en contexto: la audiografía junto al recuerdo (foto) al que
@@ -202,11 +202,7 @@ Widget memoryThumb(String photoPath,
   return ClipRRect(
     key: key,
     borderRadius: BorderRadius.circular(radius),
-    child: Image.file(
-      File(photoPath),
-      fit: fit,
-      errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFFE0D6CB)),
-    ),
+    child: RefImage(photoPath, fit: fit),
   );
 }
 

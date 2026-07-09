@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +6,7 @@ import '../../../data/services/audio_player_service.dart';
 import '../../../design/components/app_button.dart';
 import '../../../design/components/app_card.dart';
 import '../../../design/components/app_text.dart';
+import '../../../design/components/ref_image.dart';
 import '../../../design/components/voice_bubble.dart';
 import '../../../design/tokens.dart';
 import '../../../design/typography.dart';
@@ -78,15 +77,7 @@ class MemoryCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.file(
-                    File(memory.photoPath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => ColoredBox(
-                      color: context.colors.surfaceSoft,
-                      child: Icon(Icons.broken_image_outlined,
-                          size: 64, color: context.colors.inkFaint),
-                    ),
-                  ),
+                  RefImage(memory.photoPath, fit: BoxFit.cover),
                   // Velo para legibilidad arriba (título) y abajo (voces).
                   const DecoratedBox(
                     decoration: BoxDecoration(

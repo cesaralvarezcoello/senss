@@ -1,12 +1,8 @@
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../data/media/media_store.dart';
 import '../../state/memory_provider.dart';
@@ -14,7 +10,6 @@ import '../../state/memory_provider.dart';
 /// Genera recuerdos de ejemplo (fotos con degradado + voces de muestra) para
 /// ver la app con contenido sin crear nada. Solo para demo. Las "voces" son
 /// melodías suaves sintetizadas (no hay grabaciones reales incluidas).
-const _uuid = Uuid();
 
 class _Voice {
   final String author; // "Nombre, relación"
@@ -118,14 +113,11 @@ Uint8List _wavMelody(double pitch, {double seconds = 5}) {
 }
 
 Future<void> seedSampleData(MemoryProvider provider) async {
-  final tmp = await getTemporaryDirectory();
   for (final s in _samples) {
     final photoBytes = await _gradientPng(Color(s.c1), Color(s.c2));
-    final photoPath = p.join(tmp.path, 'seed_${_uuid.v4()}.png');
-    await File(photoPath).writeAsBytes(photoBytes, flush: true);
-
     final memory = await provider.createMemory(
-      sourcePhotoPath: photoPath,
+      photoBytes: photoBytes,
+      ext: 'png',
       title: s.title,
       description: s.desc,
     );

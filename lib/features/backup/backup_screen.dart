@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -48,10 +47,6 @@ class _BackupScreenState extends State<BackupScreen> {
       if (savedPath == null) {
         _snack('Copia cancelada.');
         return;
-      }
-      // En escritorio file_picker devuelve la ruta pero no escribe los bytes.
-      if (!(Platform.isAndroid || Platform.isIOS)) {
-        await File(savedPath).writeAsBytes(bytes, flush: true);
       }
       _snack('Copia guardada: ${stats.memories} recuerdos, '
           '${stats.audiographies} audiografías.');

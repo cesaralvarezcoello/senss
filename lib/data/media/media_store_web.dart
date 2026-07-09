@@ -79,8 +79,15 @@ class WebMediaStore implements MediaStore {
   Future<Uri?> audioUri(String ref) async {
     final bytes = await readBytes(ref);
     if (bytes == null) return null;
+    final ext = ref.contains('.') ? ref.split('.').last.toLowerCase() : 'm4a';
+    final mime = switch (ext) {
+      'wav' => 'audio/wav',
+      'mp3' => 'audio/mpeg',
+      'ogg' => 'audio/ogg',
+      _ => 'audio/mp4',
+    };
     // data: URI reproducible por just_audio en la web.
-    return Uri.dataFromBytes(bytes, mimeType: 'audio/mp4');
+    return Uri.dataFromBytes(bytes, mimeType: mime);
   }
 
   @override

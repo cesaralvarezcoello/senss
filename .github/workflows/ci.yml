@@ -309,3 +309,57 @@ jobs:
           name: app-release-universal-apk
           path: app-release-universal.apk
           if-no-files-found: warn
+
+  # Compila la app para web y la publica en GitHub Pages (para abrir en el
+  # navegador, incluido el Safari del iPhone). Solo en la rama principal.
+  build-web:
+    name: Build Web + GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # La carpeta web/ no se versiona: se genera y se mueve (no toca lib/).
+      - name: Generar la carpeta web/
+        run: |
+          flutter create --project-name senss --platforms=web _webscaffold
+          mv _webscaffold/web ./web
+          rm -rf _webscaffold
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      # Copia el worker + WASM de sqflite web a web/.
+      - name: Preparar sqflite web
+        run: dart run sqflite_common_ffi_web:setup
+
+      - name: Construir web
+        run: flutter build web --release --base-href /senss/
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Subir artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+      - name: Desplegar en Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

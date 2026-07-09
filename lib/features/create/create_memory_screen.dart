@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,7 +21,8 @@ class _CreateMemoryScreenState extends State<CreateMemoryScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String? _photoPath;
+  Uint8List? _photoBytes;
+  String _ext = 'jpg';
   bool _saving = false;
 
   @override
@@ -38,18 +39,24 @@ class _CreateMemoryScreenState extends State<CreateMemoryScreen> {
       imageQuality: 88,
     );
     if (image != null) {
-      setState(() => _photoPath = image.path);
+      final bytes = await image.readAsBytes();
+      final name = image.name;
+      setState(() {
+        _photoBytes = bytes;
+        _ext = name.contains('.') ? name.split('.').last.toLowerCase() : 'jpg';
+      });
     }
   }
 
   Future<void> _save() async {
     final title = _titleController.text.trim();
-    if (_photoPath == null || title.isEmpty) return;
+    if (_photoBytes == null || title.isEmpty) return;
 
     setState(() => _saving = true);
     try {
       await context.read<MemoryProvider>().createMemory(
-            sourcePhotoPath: _photoPath!,
+            photoBytes: _photoBytes!,
+            ext: _ext,
             title: title,
             description: _descriptionController.text,
           );
@@ -72,8 +79,9 @@ class _CreateMemoryScreenState extends State<CreateMemoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave =
-        _photoPath != null && _titleController.text.trim().isNotEmpty && !_saving;
+    final canSave = _photoBytes != null &&
+        _titleController.text.trim().isNotEmpty &&
+        !_saving;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nuevo recuerdo')),
@@ -82,7 +90,7 @@ class _CreateMemoryScreenState extends State<CreateMemoryScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             _PhotoPreview(
-              photoPath: _photoPath,
+              photoBytes: _photoBytes,
               onCamera: () => _pick(ImageSource.camera),
               onGallery: () => _pick(ImageSource.gallery),
             ),
@@ -128,12 +136,12 @@ class _CreateMemoryScreenState extends State<CreateMemoryScreen> {
 }
 
 class _PhotoPreview extends StatelessWidget {
-  final String? photoPath;
+  final Uint8List? photoBytes;
   final VoidCallback onCamera;
   final VoidCallback onGallery;
 
   const _PhotoPreview({
-    required this.photoPath,
+    required this.photoBytes,
     required this.onCamera,
     required this.onGallery,
   });
@@ -153,7 +161,7 @@ class _PhotoPreview extends StatelessWidget {
               border: Border.all(color: colors.outlineVariant),
             ),
             clipBehavior: Clip.antiAlias,
-            child: photoPath == null
+            child: photoBytes == null
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -169,7 +177,7 @@ class _PhotoPreview extends StatelessWidget {
                       ],
                     ),
                   )
-                : Image.file(File(photoPath!), fit: BoxFit.cover),
+                : Image.memory(photoBytes!, fit: BoxFit.cover),
           ),
         ),
         const SizedBox(height: 16),

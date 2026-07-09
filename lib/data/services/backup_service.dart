@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -7,10 +6,10 @@ import 'package:archive/archive.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:path/path.dart' as p;
 
+import '../media/media_store.dart';
 import '../models/audiography.dart';
 import '../models/memory.dart';
 import '../repositories/memory_repository.dart';
-import 'storage_service.dart';
 
 /// Error legible durante exportación/importación de copias de seguridad.
 class BackupException implements Exception {
@@ -40,11 +39,9 @@ class BackupStats {
 /// el usuario decide dónde guardar el archivo resultante.
 class BackupService {
   final MemoryRepository _repo;
-  final StorageService _storage;
 
-  BackupService({MemoryRepository? repository, StorageService? storage})
-      : _repo = repository ?? MemoryRepository(),
-        _storage = storage ?? StorageService();
+  BackupService({MemoryRepository? repository})
+      : _repo = repository ?? MemoryRepository();
 
   static const _magic = 'SENSSBK1'; // 8 bytes
   static const _formatVersion = 1;
@@ -75,12 +72,11 @@ class BackupService {
 
     for (final item in feed) {
       final memory = item.memory;
-      final photoName = p.basename(memory.photoPath);
-      final photoFile = File(memory.photoPath);
-      if (await photoFile.exists()) {
-        final bytes = await photoFile.readAsBytes();
+      final photoName = '${memory.id}${p.extension(memory.photoPath)}';
+      final photoBytes = await Media.store.readBytes(memory.photoPath);
+      if (photoBytes != null) {
         archive.addFile(
-          ArchiveFile('media/photos/$photoName', bytes.length, bytes),
+          ArchiveFile('media/photos/$photoName', photoBytes.length, photoBytes),
         );
       }
       memoriesJson.add({
@@ -92,12 +88,11 @@ class BackupService {
       });
 
       for (final a in item.audios) {
-        final audioName = p.basename(a.audioPath);
-        final audioFile = File(a.audioPath);
-        if (await audioFile.exists()) {
-          final bytes = await audioFile.readAsBytes();
+        final audioName = '${a.id}${p.extension(a.audioPath)}';
+        final audioBytes = await Media.store.readBytes(a.audioPath);
+        if (audioBytes != null) {
           archive.addFile(
-            ArchiveFile('media/audios/$audioName', bytes.length, bytes),
+            ArchiveFile('media/audios/$audioName', audioBytes.length, audioBytes),
           );
         }
         audiosJson.add({
@@ -208,7 +203,9 @@ class BackupService {
       if (photoName != null) {
         final bytes = media['media/photos/$photoName'];
         if (bytes != null) {
-          photoPath = await _storage.writePhotoBytes(photoName, bytes);
+          final ext = p.extension(photoName).replaceFirst('.', '');
+          photoPath = await Media.store
+              .savePhoto(Uint8List.fromList(bytes), ext: ext.isEmpty ? 'jpg' : ext);
         }
       }
       await _repo.insertMemory(Memory(
@@ -226,7 +223,9 @@ class BackupService {
       if (audioName != null) {
         final bytes = media['media/audios/$audioName'];
         if (bytes != null) {
-          audioPath = await _storage.writeAudioBytes(audioName, bytes);
+          final ext = p.extension(audioName).replaceFirst('.', '');
+          audioPath = await Media.store
+              .saveAudio(Uint8List.fromList(bytes), ext: ext.isEmpty ? 'm4a' : ext);
         }
       }
       await _repo.insertAudiography(Audiography(

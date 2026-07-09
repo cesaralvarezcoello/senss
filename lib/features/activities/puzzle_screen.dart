@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -7,6 +6,7 @@ import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 import 'activity_kit.dart';
 
@@ -190,7 +190,7 @@ class _PuzzleScreenState extends State<PuzzleScreen> {
         child: SizedBox(
           width: board,
           height: board,
-          child: Image.file(File(_memory.memory.photoPath), fit: BoxFit.cover),
+          child: RefImage(_memory.memory.photoPath, fit: BoxFit.cover),
         ),
       ),
     );

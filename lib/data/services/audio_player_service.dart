@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../media/media_store.dart';
+
 /// Reproduce audiografías individuales o en secuencia (una tras otra) para un
 /// mismo recuerdo. Envuelve `just_audio` con una única instancia de reproductor
 /// y, como [ChangeNotifier], expone **qué ruta está sonando** para que la UI
@@ -45,27 +47,35 @@ class AudioPlayerService extends ChangeNotifier {
   /// ¿Es [path] la pista activa (sonando o en pausa)?
   bool isCurrent(String path) => currentPath == path;
 
-  /// Reproduce un único archivo de audio.
-  Future<void> playFile(String path) async {
+  /// Reproduce una única audiografía (referencia de medio, agnóstica).
+  Future<void> playFile(String ref) async {
     await _player.stop();
-    _queue = [path];
+    final uri = await Media.store.audioUri(ref);
+    if (uri == null) return;
+    _queue = [ref];
     _index = 0;
-    await _player.setAudioSource(AudioSource.file(path));
+    await _player.setAudioSource(AudioSource.uri(uri));
     notifyListeners();
     await _player.play();
   }
 
   /// Reproduce varias audiografías en secuencia (el "hilo" de audio-recuerdos).
-  Future<void> playSequence(List<String> paths) async {
-    if (paths.isEmpty) return;
+  Future<void> playSequence(List<String> refs) async {
+    if (refs.isEmpty) return;
     await _player.stop();
-    _queue = List.of(paths);
+    final sources = <AudioSource>[];
+    final valid = <String>[];
+    for (final ref in refs) {
+      final uri = await Media.store.audioUri(ref);
+      if (uri != null) {
+        sources.add(AudioSource.uri(uri));
+        valid.add(ref);
+      }
+    }
+    if (sources.isEmpty) return;
+    _queue = valid;
     _index = 0;
-    await _player.setAudioSource(
-      ConcatenatingAudioSource(
-        children: paths.map((path) => AudioSource.file(path)).toList(),
-      ),
-    );
+    await _player.setAudioSource(ConcatenatingAudioSource(children: sources));
     notifyListeners();
     await _player.play();
   }

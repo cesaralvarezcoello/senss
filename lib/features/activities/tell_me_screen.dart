@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/media/media_store.dart';
 import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../data/services/audio_recorder_service.dart';
-import '../../data/services/storage_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
 import '../../design/tokens.dart';
@@ -26,7 +26,6 @@ class _TellMeScreenState extends State<TellMeScreen> {
   final _picker = Picker();
   final _player = AudioPlayerService();
   final _recorder = AudioRecorderService();
-  final _storage = StorageService();
 
   late MemoryWithAudios _memory;
   bool _recording = false;
@@ -63,7 +62,11 @@ class _TellMeScreenState extends State<TellMeScreen> {
       return;
     }
     await _player.stop();
-    _path = await _storage.newAudioPath();
+    _path = await Media.store.newRecordingPath();
+    if (_path == null) {
+      _snack('La grabación aún no está disponible en el navegador.');
+      return;
+    }
     await _recorder.start(_path!);
     setState(() {
       _recording = true;
