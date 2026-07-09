@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/profile.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/dictate_field.dart';
 import '../../design/tokens.dart';
 import '../../state/profile_store.dart';
 
@@ -65,11 +66,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             const SizedBox(height: AppSpace.xl),
             const AppText('¿Cómo se llama?', variant: AppTextVariant.titleM),
             const SizedBox(height: AppSpace.sm),
-            TextField(
+            DictateField(
               controller: _name,
-              textCapitalization: TextCapitalization.words,
-              style: const TextStyle(fontSize: 19),
-              decoration: const InputDecoration(hintText: 'Ej. Rosa'),
+              hint: 'Ej. Rosa',
+              capitalization: TextCapitalization.words,
             ),
             const SizedBox(height: AppSpace.xl),
             const AppText('Edad', variant: AppTextVariant.titleM),

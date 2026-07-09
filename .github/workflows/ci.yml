@@ -87,6 +87,8 @@ jobs:
           MANIFEST=android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.RECORD_AUDIO" "$MANIFEST" || \
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n    <uses-permission android:name="android.permission.CAMERA"/>' "$MANIFEST"
+          grep -q "RecognitionService" "$MANIFEST" || \
+            sed -i '/<manifest/a\    <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>' "$MANIFEST"
           echo "----- AndroidManifest.xml -----"
           cat "$MANIFEST"
 
@@ -176,6 +178,8 @@ jobs:
           MANIFEST=android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.RECORD_AUDIO" "$MANIFEST" || \
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n    <uses-permission android:name="android.permission.CAMERA"/>' "$MANIFEST"
+          grep -q "RecognitionService" "$MANIFEST" || \
+            sed -i '/<manifest/a\    <queries><intent><action android:name="android.speech.RecognitionService" /></intent></queries>' "$MANIFEST"
 
       - name: Ajustes de Gradle (JVM target + compileSdk)
         run: |

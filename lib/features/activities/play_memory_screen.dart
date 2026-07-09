@@ -8,6 +8,7 @@ import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/dictate_field.dart';
 import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
@@ -116,13 +117,10 @@ class _PlayMemoryScreenState extends State<PlayMemoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('¿Qué recuerdas de este día?'),
-        content: TextField(
+        content: DictateField(
           controller: controller,
-          autofocus: true,
           maxLines: 3,
-          style: const TextStyle(fontSize: 18),
-          decoration: const InputDecoration(
-              hintText: 'Escribe algo bonito de este momento…'),
+          hint: 'Dilo en voz alta o escríbelo…',
         ),
         actions: [
           TextButton(

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/person.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/dictate_field.dart';
 import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
@@ -211,21 +212,18 @@ class _AddPersonSheetState extends State<_AddPersonSheet> {
             ),
           ),
           const SizedBox(height: AppSpace.md),
-          TextField(
+          DictateField(
             controller: _name,
-            textCapitalization: TextCapitalization.words,
-            style: const TextStyle(fontSize: 19),
-            decoration: const InputDecoration(
-                labelText: 'Nombre', hintText: 'Ej. Carlos'),
+            label: 'Nombre',
+            hint: 'Ej. Carlos',
+            capitalization: TextCapitalization.words,
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppSpace.md),
-          TextField(
+          DictateField(
             controller: _rel,
-            textCapitalization: TextCapitalization.sentences,
-            style: const TextStyle(fontSize: 19),
-            decoration: const InputDecoration(
-                labelText: 'Relación', hintText: 'Ej. tu hijo'),
+            label: 'Relación',
+            hint: 'Ej. tu hijo',
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppSpace.xl),

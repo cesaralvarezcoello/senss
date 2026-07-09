@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../design/components/dictate_field.dart';
 import '../../state/memory_provider.dart';
 
 /// Pantalla de creación: importar/tomar una foto, ponerle un título y
@@ -95,26 +96,18 @@ class _CreateMemoryScreenState extends State<CreateMemoryScreen> {
               onGallery: () => _pick(ImageSource.gallery),
             ),
             const SizedBox(height: 24),
-            TextField(
+            DictateField(
               controller: _titleController,
-              textCapitalization: TextCapitalization.sentences,
-              style: const TextStyle(fontSize: 19),
-              decoration: const InputDecoration(
-                labelText: 'Título del recuerdo',
-                hintText: 'Ej. Verano en la playa',
-              ),
+              label: 'Título del recuerdo',
+              hint: 'Ej. Verano en la playa',
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 16),
-            TextField(
+            DictateField(
               controller: _descriptionController,
-              textCapitalization: TextCapitalization.sentences,
+              label: 'Descripción (opcional)',
+              hint: '¿Qué hace especial a este momento?',
               maxLines: 3,
-              style: const TextStyle(fontSize: 19),
-              decoration: const InputDecoration(
-                labelText: 'Descripción (opcional)',
-                hintText: '¿Qué hace especial a este momento?',
-              ),
             ),
             const SizedBox(height: 28),
             FilledButton.icon(

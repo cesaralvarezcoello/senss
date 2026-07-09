@@ -9,6 +9,7 @@ import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
+import '../../design/components/dictate_field.dart';
 import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
@@ -251,12 +252,10 @@ class _FogRevealScreenState extends State<FogRevealScreen> {
       children: [
         AppText(q.prompt, variant: AppTextVariant.titleM),
         const SizedBox(height: AppSpace.md),
-        TextField(
+        DictateField(
           controller: _text,
           maxLines: 3,
-          style: const TextStyle(fontSize: 18),
-          decoration:
-              const InputDecoration(hintText: 'Escribe algo de este momento…'),
+          hint: 'Dilo en voz alta o escríbelo…',
         ),
         const SizedBox(height: AppSpace.lg),
         AppButton(

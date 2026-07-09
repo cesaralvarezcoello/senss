@@ -20,6 +20,9 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.4
 
+  # Dictado por voz (reconocimiento on-device: Android/iOS/web) para no escribir
+  speech_to_text: ^7.0.0
+
   # Audio: grabación (AAC/.m4a) y reproducción
   # record >=6.2.1: alinea sus implementaciones federadas (record_linux 1.3.x
   # con record_platform_interface 1.6.x). En 5.x el resolutor emparejaba

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
 import '../../data/services/audio_recorder_service.dart';
+import '../../design/components/dictate_field.dart';
 import '../../state/memory_provider.dart';
 
 /// Hoja inferior para grabar una audiografía y adjuntarla a un recuerdo.
@@ -189,14 +190,11 @@ class _RecordAudiographySheetState extends State<RecordAudiographySheet> {
       children: [
         Text('Casi listo', style: theme.textTheme.titleLarge),
         const SizedBox(height: 16),
-        TextField(
+        DictateField(
           controller: _authorController,
-          textCapitalization: TextCapitalization.words,
-          style: const TextStyle(fontSize: 19),
-          decoration: const InputDecoration(
-            labelText: '¿Quién grabó esto?',
-            hintText: 'Ej. Carlos, tu hijo',
-          ),
+          label: '¿Quién grabó esto?',
+          hint: 'Ej. Carlos, tu hijo',
+          capitalization: TextCapitalization.words,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 20),
