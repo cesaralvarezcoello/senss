@@ -11,6 +11,7 @@ import '../../core/emotions.dart';
 import '../../core/profile.dart';
 import '../../data/media/media_store.dart';
 import '../../data/models/audiography.dart';
+import '../../data/models/person.dart';
 import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
@@ -25,6 +26,7 @@ import '../../utils/time_ago.dart';
 import '../activities/fog_reveal_screen.dart';
 import '../activities/play_memory_screen.dart';
 import '../feed/feed_screen.dart';
+import '../record/record_audiography_sheet.dart';
 
 /// Modo paciente: UN recuerdo a la vez, a pantalla completa. El fondo es la
 /// propia foto desenfocada (ambiente), la foto nítida flota encima, y la voz
@@ -44,6 +46,7 @@ class _MomentScreenState extends State<MomentScreen> {
   Color _amb = const Color(0xFFE08A2E);
   Color _amb2 = const Color(0xFFC7562F);
   Profile _profile = const Profile();
+  List<Person> _people = const [];
   AppCopy _copy = const AppCopy(Profile());
   final _rand = Random();
   bool _invite = false;
@@ -159,6 +162,32 @@ class _MomentScreenState extends State<MomentScreen> {
     await _player.skipTo(i);
   }
 
+  /// Añade una nueva voz a ESTE recuerdo (las audiografías se acumulan con el
+  /// tiempo). Abre la grabación; al guardar, el feed se refresca y aparece una
+  /// burbuja más alrededor de la foto.
+  Future<void> _addVoice(MemoryWithAudios m) async {
+    _player.stop();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => RecordAudiographySheet(memoryId: m.memory.id),
+    );
+  }
+
+  /// Retrato de la persona cuyo nombre coincide con el autor (para la burbuja).
+  Person? _personFor(String author) {
+    final target = _split(author).$1.trim().toLowerCase();
+    if (target.isEmpty) return null;
+    for (final p in _people) {
+      if (p.hasPortrait && p.name.trim().toLowerCase() == target) return p;
+    }
+    return null;
+  }
+
   Future<void> _openCaregiver() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -199,6 +228,7 @@ class _MomentScreenState extends State<MomentScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<MemoryProvider>();
     final feed = provider.feed;
+    _people = provider.people;
     _profile = context.watch<ProfileStore>().profile;
     _copy = AppCopy(_profile);
 
@@ -393,7 +423,7 @@ class _MomentScreenState extends State<MomentScreen> {
     );
   }
 
-  // La foto nítida "flota" sobre su versión desenfocada.
+  // La foto nítida "flota" sobre su versión desenfocada, rodeada por las voces.
   Widget _hero(MemoryWithAudios m) {
     return LayoutBuilder(
       builder: (ctx, cons) {
@@ -406,7 +436,7 @@ class _MomentScreenState extends State<MomentScreen> {
           cardH = h;
           cardW = cardH * 4 / 5;
         }
-        return Container(
+        final card = Container(
           width: cardW,
           height: cardH,
           decoration: BoxDecoration(
@@ -453,7 +483,162 @@ class _MomentScreenState extends State<MomentScreen> {
             ],
           ),
         );
+
+        // Las burbujas se resaltan según la voz activa (cambia al girar el dial).
+        return SizedBox(
+          width: cardW,
+          height: cardH,
+          child: AnimatedBuilder(
+            animation: _player,
+            builder: (context, _) {
+              final active = _activeAudio(m);
+              final activeIndex = active == null
+                  ? -1
+                  : m.audios.indexOf(active).clamp(0, m.audios.length - 1);
+              return Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  card,
+                  ..._voiceBubbles(m, cardW, cardH, activeIndex),
+                ],
+              );
+            },
+          ),
+        );
       },
+    );
+  }
+
+  /// Anillo de burbujas alrededor de la foto: una por voz + una "+" para añadir.
+  /// Se distribuyen en un arco superior (deja libre el pie, donde va el título).
+  List<Widget> _voiceBubbles(
+      MemoryWithAudios m, double cardW, double cardH, int activeIndex) {
+    final voices = m.audios.length;
+    final showVoices = voices >= 1 && voices <= 8;
+    final slots = (showVoices ? voices : 0) + 1; // +1 = burbuja de añadir.
+    final base = (cardW * 0.17).clamp(42.0, 66.0);
+    final rx = cardW * 0.42;
+    final ry = cardH * 0.42;
+    final cx = cardW / 2;
+    final cy = cardH / 2;
+    const used = 2 * pi * (240 / 360); // arco de 240°, libre el pie (título).
+
+    Offset at(int i) {
+      final frac = slots == 1 ? 0.5 : i / (slots - 1);
+      final ang = (-pi / 2 - used / 2) + used * frac;
+      return Offset(cx + rx * cos(ang), cy + ry * sin(ang));
+    }
+
+    final result = <Widget>[];
+    Widget? activeBubble;
+    if (showVoices) {
+      for (var i = 0; i < voices; i++) {
+        final isActive = i == activeIndex;
+        final size = isActive ? base * 1.32 : base;
+        final c = at(i);
+        final w = Positioned(
+          left: c.dx - size / 2,
+          top: c.dy - size / 2,
+          child: _voiceBubble(m, i, m.audios[i], isActive, size),
+        );
+        if (isActive) {
+          activeBubble = w;
+        } else {
+          result.add(w);
+        }
+      }
+    }
+    // Burbuja de añadir (siempre): último slot del arco.
+    final c = at(slots - 1);
+    result.add(Positioned(
+      left: c.dx - base / 2,
+      top: c.dy - base / 2,
+      child: _addBubble(m, base),
+    ));
+    if (activeBubble != null) result.add(activeBubble); // activa, encima.
+    return result;
+  }
+
+  Widget _voiceBubble(
+      MemoryWithAudios m, int index, Audiography a, bool isActive, double size) {
+    final person = _personFor(a.authorName);
+    final (n, _) = _split(a.authorName);
+    final s = EmotionStyle.of(a.emotionTag);
+    return Semantics(
+      button: true,
+      label: 'Voz de $n',
+      child: GestureDetector(
+        onTap: () => _seekAudio(m, index),
+        child: AnimatedContainer(
+          duration: AppMotion.base,
+          curve: AppMotion.curve,
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: person == null
+                ? LinearGradient(colors: [_amb, _amb2])
+                : null,
+            border: Border.all(
+              color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.5),
+              width: isActive ? 3 : 2,
+            ),
+            boxShadow: [
+              if (isActive)
+                BoxShadow(
+                    color: _amb.withValues(alpha: 0.7),
+                    blurRadius: 20,
+                    spreadRadius: 1),
+              const BoxShadow(color: Color(0x66000000), blurRadius: 8),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (person != null)
+                RefImage(person.portraitPath, fit: BoxFit.cover)
+              else
+                Center(
+                  child: AppText(
+                    n.isEmpty ? '♪' : n.substring(0, 1).toUpperCase(),
+                    variant: AppTextVariant.titleM,
+                    color: Colors.white,
+                  ),
+                ),
+              if (isActive)
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Text(s.emoji, style: TextStyle(fontSize: size * 0.3)),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _addBubble(MemoryWithAudios m, double size) {
+    return Semantics(
+      button: true,
+      label: 'Añadir una voz a este recuerdo',
+      child: GestureDetector(
+        onTap: () => _addVoice(m),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [_amb.withValues(alpha: 0.9), _amb2.withValues(alpha: 0.9)],
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2),
+            boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 8)],
+          ),
+          child: Icon(Icons.add_rounded, color: Colors.white, size: size * 0.56),
+        ),
+      ),
     );
   }
 
