@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:senss/app.dart';
 import 'package:senss/data/repositories/memory_repository.dart';
 import 'package:senss/state/memory_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Repositorio falso: siempre devuelve un feed vacío sin abrir SQLite ni tocar
 /// path_provider, para que la app pueda montarse en un test de widgets.
@@ -24,6 +25,9 @@ Future<void> _pumpApp(WidgetTester tester) async {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   testWidgets('arranca en el modo paciente y muestra el estado vacío',
       (tester) async {
     await _pumpApp(tester);

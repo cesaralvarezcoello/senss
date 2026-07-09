@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/app_copy.dart';
 import '../../core/emotions.dart';
+import '../../core/profile.dart';
 import '../../data/media/media_store.dart';
 import '../../data/models/audiography.dart';
 import '../../data/repositories/memory_repository.dart';
@@ -15,6 +17,7 @@ import '../../design/components/app_text.dart';
 import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
+import '../../state/profile_store.dart';
 import '../../utils/time_ago.dart';
 import '../feed/feed_screen.dart';
 
@@ -35,6 +38,7 @@ class _MomentScreenState extends State<MomentScreen> {
   String? _shownId;
   Color _amb = const Color(0xFFE08A2E);
   Color _amb2 = const Color(0xFFC7562F);
+  AppCopy _copy = const AppCopy(Profile());
 
   @override
   void dispose() {
@@ -153,6 +157,7 @@ class _MomentScreenState extends State<MomentScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<MemoryProvider>();
     final feed = provider.feed;
+    _copy = AppCopy(context.watch<ProfileStore>().profile);
 
     if (provider.loading && feed.isEmpty) {
       return const Scaffold(
@@ -215,7 +220,7 @@ class _MomentScreenState extends State<MomentScreen> {
                   if (feed.length > 1) ...[
                     const SizedBox(height: AppSpace.md),
                     AppButton(
-                      label: 'Otro recuerdo',
+                      label: _copy.otherMemory,
                       icon: Icons.arrow_forward_rounded,
                       variant: AppButtonVariant.glass,
                       onPressed: () => _next(feed.length),
@@ -238,9 +243,9 @@ class _MomentScreenState extends State<MomentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText('$_greeting 💛',
+              AppText(_copy.greeting(_greeting),
                   variant: AppTextVariant.titleM, tone: AppTone.onPhoto),
-              const AppText('Alguien que te quiere pensó en ti',
+              AppText(_copy.momentSubtitle,
                   variant: AppTextVariant.caption, tone: AppTone.onPhoto),
             ],
           ),
@@ -415,10 +420,8 @@ class _MomentScreenState extends State<MomentScreen> {
             const SizedBox(height: AppSpace.md),
             AppText(
               hasVoices
-                  ? (isPlaying
-                      ? 'La voz de $name, contigo'
-                      : 'Toca y escucha${name.isEmpty ? '' : ' a $name'}')
-                  : 'Este recuerdo todavía espera una voz 💛',
+                  ? (isPlaying ? _copy.nowPlaying(name) : _copy.playHint(name))
+                  : _copy.noVoices,
               variant: AppTextVariant.bodyStrong,
               tone: AppTone.onPhoto,
               align: TextAlign.center,
@@ -503,14 +506,13 @@ class _MomentScreenState extends State<MomentScreen> {
                 Icon(Icons.favorite_rounded,
                     size: 72, color: _amb.withValues(alpha: 0.9)),
                 const SizedBox(height: AppSpace.xl),
-                const AppText('Aquí vivirán tus recuerdos',
+                AppText(_copy.emptyTitle,
                     variant: AppTextVariant.titleL,
                     tone: AppTone.onPhoto,
                     align: TextAlign.center),
                 const SizedBox(height: AppSpace.md),
-                const AppText(
-                  'Tu familia irá guardando las fotos y las voces de quienes '
-                  'te quieren, para acompañarte.',
+                AppText(
+                  _copy.emptyBody,
                   variant: AppTextVariant.body,
                   tone: AppTone.onPhoto,
                   align: TextAlign.center,

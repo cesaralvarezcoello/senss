@@ -11,6 +11,7 @@ import '../activities/activities_hub_screen.dart';
 import '../backup/backup_screen.dart';
 import '../create/create_memory_screen.dart';
 import '../dev/sample_data.dart';
+import '../profile/profile_setup_screen.dart';
 import 'widgets/memory_card.dart';
 
 /// Pantalla principal: un feed vertical y cálido de recuerdos.
@@ -66,6 +67,12 @@ class _FeedScreenState extends State<FeedScreen> {
         titleSpacing: 20,
         title: const AppText('senss', variant: AppTextVariant.titleL),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const ProfileSetupScreen())),
+            icon: const Icon(Icons.person_outline, size: 26),
+            tooltip: 'Perfil',
+          ),
           IconButton(
             onPressed: _openActivities,
             icon: const Icon(Icons.celebration_outlined, size: 26),
