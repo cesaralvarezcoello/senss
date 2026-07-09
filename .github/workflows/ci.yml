@@ -370,6 +370,34 @@ jobs:
           cp ci/kill-sw.js build/web/flutter_service_worker.js
           sed -i 's#</head>#<script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}</script></head>#' build/web/index.html
 
+      # Preview al compartir el link (WhatsApp, Twitter/X, Facebook, iMessage):
+      # copia la tarjeta social 1200x630 y añade los meta Open Graph/Twitter.
+      - name: Inyectar Open Graph (preview al compartir)
+        run: |
+          cp docs/marketing/og-image.jpg build/web/og-image.jpg
+          cat > og-meta.html <<'HTML'
+          <meta property="og:type" content="website">
+          <meta property="og:site_name" content="senss">
+          <meta property="og:title" content="senss — Las voces que amas, guardadas para siempre">
+          <meta property="og:description" content="Audiografías privadas y locales para preservar recuerdos. Una app de apoyo, sin fines de lucro, para personas con Alzheimer.">
+          <meta property="og:url" content="https://cesaralvarezcoello.github.io/senss/">
+          <meta property="og:image" content="https://cesaralvarezcoello.github.io/senss/og-image.jpg">
+          <meta property="og:image:secure_url" content="https://cesaralvarezcoello.github.io/senss/og-image.jpg">
+          <meta property="og:image:type" content="image/jpeg">
+          <meta property="og:image:width" content="1200">
+          <meta property="og:image:height" content="630">
+          <meta property="og:image:alt" content="senss en un teléfono, con las voces de la familia alrededor de la foto.">
+          <meta name="twitter:card" content="summary_large_image">
+          <meta name="twitter:title" content="senss — Las voces que amas, guardadas para siempre">
+          <meta name="twitter:description" content="Audiografías privadas y locales para preservar recuerdos.">
+          <meta name="twitter:image" content="https://cesaralvarezcoello.github.io/senss/og-image.jpg">
+          <meta name="description" content="Audiografías privadas y locales para preservar recuerdos. Apoyo para personas con Alzheimer.">
+          HTML
+          awk '/<\/head>/{while((getline line < "og-meta.html")>0) print line} {print}' build/web/index.html > build/web/index.tmp
+          mv build/web/index.tmp build/web/index.html
+          echo "----- <head> resultante -----"
+          sed -n '1,48p' build/web/index.html
+
       - name: Configurar Pages
         uses: actions/configure-pages@v5
         with:
