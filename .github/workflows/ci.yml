@@ -348,10 +348,13 @@ jobs:
       - name: Construir web
         run: flutter build web --release --base-href /senss/ --pwa-strategy=none
 
-      # Desregistra cualquier service worker viejo que quedó en navegadores que
-      # visitaron versiones anteriores (auto-limpieza).
+      # Limpia service workers atascados de versiones anteriores:
+      # 1) Reemplaza flutter_service_worker.js por un "kill-switch" que el SW
+      #    viejo re-descarga al navegar → se auto-destruye y recarga.
+      # 2) Inyecta también una limpieza en index.html (para cargas nuevas).
       - name: Limpiar service workers antiguos
         run: |
+          cp ci/kill-sw.js build/web/flutter_service_worker.js
           sed -i 's#</head>#<script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}</script></head>#' build/web/index.html
 
       - name: Configurar Pages

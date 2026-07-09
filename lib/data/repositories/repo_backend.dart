@@ -1,6 +1,7 @@
 import '../models/audiography.dart';
 import '../models/memory.dart';
 import '../models/memory_with_audios.dart';
+import '../models/person.dart';
 
 // Backend por plataforma: sqflite en nativo, IndexedDB en web.
 import 'repo_backend_idb.dart' if (dart.library.io) 'repo_backend_sqflite.dart';
