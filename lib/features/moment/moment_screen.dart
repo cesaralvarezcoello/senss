@@ -43,6 +43,7 @@ class _MomentScreenState extends State<MomentScreen> {
   Color _amb2 = const Color(0xFFC7562F);
   AppCopy _copy = const AppCopy(Profile());
   final _rand = Random();
+  bool _invite = false;
 
   @override
   void dispose() {
@@ -82,13 +83,12 @@ class _MomentScreenState extends State<MomentScreen> {
     }
     // De vez en cuando, invita a jugar con este recuerdo (sin obligar).
     if (_rand.nextInt(3) == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('¿Jugamos con este recuerdo? 🧩'),
-          action: SnackBarAction(label: 'Jugar', onPressed: () => _openGame(m)),
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      setState(() => _invite = true);
+      Future<void>.delayed(const Duration(seconds: 6), () {
+        if (mounted) setState(() => _invite = false);
+      });
+    } else {
+      _invite = false;
     }
   }
 
@@ -272,7 +272,64 @@ class _MomentScreenState extends State<MomentScreen> {
               ),
             ),
           ),
+          // Invitación animada a jugar con este recuerdo.
+          Positioned(
+            left: 20,
+            right: 20,
+            top: 78,
+            child: IgnorePointer(
+              ignoring: !_invite,
+              child: AnimatedSlide(
+                offset: _invite ? Offset.zero : const Offset(0, -1.4),
+                duration: AppMotion.base,
+                curve: Curves.easeOutBack,
+                child: AnimatedOpacity(
+                  opacity: _invite ? 1 : 0,
+                  duration: AppMotion.base,
+                  child: _inviteBanner(m),
+                ),
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _inviteBanner(MemoryWithAudios m) {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _invite = false);
+        _openGame(m);
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              gradient: LinearGradient(colors: [
+                _amb.withValues(alpha: 0.55),
+                _amb2.withValues(alpha: 0.55),
+              ]),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+            ),
+            child: const Row(
+              children: [
+                Text('🧩', style: TextStyle(fontSize: 26)),
+                SizedBox(width: 12),
+                Expanded(
+                  child: AppText('¡Juguemos con este recuerdo!',
+                      variant: AppTextVariant.bodyStrong, tone: AppTone.onPhoto),
+                ),
+                Icon(Icons.play_circle_fill_rounded,
+                    color: Colors.white, size: 30),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

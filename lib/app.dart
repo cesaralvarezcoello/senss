@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/constants.dart';
 import 'design/app_theme.dart';
 import 'features/moment/moment_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'state/profile_store.dart';
 
 class SenssApp extends StatelessWidget {
@@ -32,7 +33,17 @@ class SenssApp extends StatelessWidget {
                 child: child!,
               );
             },
-            home: const MomentScreen(),
+            home: !store.loaded
+                ? const ColoredBox(
+                    color: Color(0xFF0E0A07),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFFE08A2E)),
+                    ),
+                  )
+                : (store.profile.onboarded
+                    ? const MomentScreen()
+                    : const OnboardingScreen()),
           );
         },
       ),

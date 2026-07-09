@@ -12,11 +12,15 @@ class Profile {
   /// Si la familia ya configuró el perfil (para no volver a preguntar).
   final bool configured;
 
+  /// Si ya se vio la bienvenida (onboarding).
+  final bool onboarded;
+
   const Profile({
     this.name = '',
     this.age = AgeGroup.adult,
     this.gender = Gender.unspecified,
     this.configured = false,
+    this.onboarded = false,
   });
 
   bool get isSenior => age == AgeGroup.senior;
@@ -43,12 +47,18 @@ class Profile {
         Gender.unspecified => n,
       };
 
-  Profile copyWith({String? name, AgeGroup? age, Gender? gender, bool? configured}) =>
+  Profile copyWith(
+          {String? name,
+          AgeGroup? age,
+          Gender? gender,
+          bool? configured,
+          bool? onboarded}) =>
       Profile(
         name: name ?? this.name,
         age: age ?? this.age,
         gender: gender ?? this.gender,
         configured: configured ?? this.configured,
+        onboarded: onboarded ?? this.onboarded,
       );
 
   Map<String, Object?> toJson() => {
@@ -56,6 +66,7 @@ class Profile {
         'age': age.index,
         'gender': gender.index,
         'configured': configured,
+        'onboarded': onboarded,
       };
 
   factory Profile.fromJson(Map<String, Object?> j) => Profile(
@@ -63,5 +74,6 @@ class Profile {
         age: AgeGroup.values[(j['age'] as int?) ?? AgeGroup.adult.index],
         gender: Gender.values[(j['gender'] as int?) ?? Gender.unspecified.index],
         configured: j['configured'] as bool? ?? false,
+        onboarded: j['onboarded'] as bool? ?? false,
       );
 }

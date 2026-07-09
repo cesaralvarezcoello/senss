@@ -13,6 +13,9 @@ class ProfileStore extends ChangeNotifier {
   Profile _profile = const Profile();
   Profile get profile => _profile;
 
+  bool _loaded = false;
+  bool get loaded => _loaded;
+
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -23,8 +26,12 @@ class ProfileStore extends ChangeNotifier {
     } catch (_) {
       // Sin plugin (p. ej. en tests) o error: se queda el perfil por defecto.
     }
+    _loaded = true;
     notifyListeners();
   }
+
+  Future<void> markOnboarded() =>
+      save(_profile.copyWith(onboarded: true));
 
   Future<void> save(Profile p) async {
     _profile = p;

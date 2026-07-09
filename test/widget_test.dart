@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -30,7 +32,11 @@ Future<void> _pumpApp(WidgetTester tester) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences.setMockInitialValues({});
+  // Perfil con la bienvenida ya vista, para que arranque en el modo paciente.
+  SharedPreferences.setMockInitialValues({
+    'senss_profile': jsonEncode(
+        {'onboarded': true, 'configured': true, 'name': '', 'age': 1, 'gender': 2}),
+  });
 
   testWidgets('arranca en el modo paciente y muestra el estado vacío',
       (tester) async {
