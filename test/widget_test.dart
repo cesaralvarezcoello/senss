@@ -28,7 +28,7 @@ void main() {
       (tester) async {
     await _pumpApp(tester);
 
-    expect(find.text('Aún no hay recuerdos'), findsOneWidget);
+    expect(find.text('Aquí vivirán tus recuerdos'), findsOneWidget);
     expect(find.text('Entrar como familia'), findsOneWidget);
   });
 
