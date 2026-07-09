@@ -36,9 +36,15 @@ class MemoryProvider extends ChangeNotifier {
   Future<void> loadFeed() async {
     _loading = true;
     notifyListeners();
-    _feed = await _repo.getFeed();
-    _loading = false;
-    notifyListeners();
+    try {
+      _feed = await _repo.getFeed();
+    } catch (e) {
+      debugPrint('loadFeed error: $e');
+      _feed = const [];
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   /// Crea un recuerdo a partir de los bytes de una foto (tomada/importada).
