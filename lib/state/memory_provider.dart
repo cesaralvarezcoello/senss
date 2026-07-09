@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../data/media/media_store.dart';
 import '../data/models/audiography.dart';
 import '../data/models/memory.dart';
+import '../data/models/person.dart';
 import '../data/repositories/memory_repository.dart';
 import '../data/services/backup_service.dart';
 import '../data/services/moderation_service.dart';
@@ -30,6 +31,9 @@ class MemoryProvider extends ChangeNotifier {
   List<MemoryWithAudios> _feed = const [];
   List<MemoryWithAudios> get feed => _feed;
 
+  List<Person> _people = const [];
+  List<Person> get people => _people;
+
   bool _loading = false;
   bool get loading => _loading;
 
@@ -38,13 +42,43 @@ class MemoryProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _feed = await _repo.getFeed();
+      _people = await _repo.getPeople();
     } catch (e) {
       debugPrint('loadFeed error: $e');
       _feed = const [];
+      _people = const [];
     } finally {
       _loading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> addPerson({
+    required Uint8List portraitBytes,
+    String ext = 'jpg',
+    required String name,
+    String relationship = '',
+  }) async {
+    final ref = portraitBytes.isEmpty
+        ? ''
+        : await Media.store.savePhoto(portraitBytes, ext: ext);
+    final person = Person(
+      id: _uuid.v4(),
+      name: name.trim(),
+      relationship: relationship.trim(),
+      portraitPath: ref,
+      createdAt: DateTime.now(),
+    );
+    await _repo.insertPerson(person);
+    await loadFeed();
+  }
+
+  Future<void> deletePerson(Person person) async {
+    await _repo.deletePerson(person.id);
+    if (person.portraitPath.isNotEmpty) {
+      await Media.store.delete(person.portraitPath);
+    }
+    await loadFeed();
   }
 
   /// Crea un recuerdo a partir de los bytes de una foto (tomada/importada).

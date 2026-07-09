@@ -1,6 +1,7 @@
 import '../models/audiography.dart';
 import '../models/memory.dart';
 import '../models/memory_with_audios.dart';
+import '../models/person.dart';
 import 'repo_backend.dart';
 
 export '../models/memory_with_audios.dart';
@@ -28,4 +29,10 @@ class MemoryRepository {
   Future<void> deleteMemory(String id) => _backend.deleteMemory(id);
 
   Future<void> deleteAudiography(String id) => _backend.deleteAudiography(id);
+
+  Future<void> insertPerson(Person person) => _backend.insertPerson(person);
+
+  Future<List<Person>> getPeople() => _backend.getPeople();
+
+  Future<void> deletePerson(String id) => _backend.deletePerson(id);
 }

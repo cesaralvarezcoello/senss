@@ -32,6 +32,10 @@ class Profile {
   /// Tamaño base de iconos y objetivos táctiles.
   double get iconScale => isSenior ? 1.2 : 1.0;
 
+  /// Nº de opciones en los juegos: la tercera edad juega con menos (2), el
+  /// resto con 3.
+  int get choiceCount => isSenior ? 2 : 3;
+
   /// Elige la variante según género (masculino / femenino / neutro).
   String gendered(String m, String f, String n) => switch (gender) {
         Gender.male => m,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
 import '../../core/emotions.dart';
@@ -7,6 +8,7 @@ import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
 import '../../design/tokens.dart';
+import '../../state/profile_store.dart';
 import 'activity_kit.dart';
 
 /// Reto: escucha una voz y elige la emoción que guarda. Conecta el afecto; no
@@ -26,6 +28,7 @@ class _EmotionGuessScreenState extends State<EmotionGuessScreen> {
 
   late Voice _target;
   late List<String> _options;
+  late final int _choices;
   bool _answered = false;
   String? _chosen;
 
@@ -34,6 +37,7 @@ class _EmotionGuessScreenState extends State<EmotionGuessScreen> {
     super.initState();
     _voices =
         voicesOf(widget.feed).where((v) => v.audio.emotionTag != null).toList();
+    _choices = context.read<ProfileStore>().profile.choiceCount;
     _newRound();
   }
 
@@ -48,7 +52,7 @@ class _EmotionGuessScreenState extends State<EmotionGuessScreen> {
     final correct = _target.audio.emotionTag!;
     final others =
         AppConstants.emotionTags.where((e) => e != correct).toList();
-    _options = _picker.shuffle([correct, ..._picker.sample(others, 2)]);
+    _options = _picker.shuffle([correct, ..._picker.sample(others, _choices - 1)]);
     _answered = false;
     _chosen = null;
     setState(() {});

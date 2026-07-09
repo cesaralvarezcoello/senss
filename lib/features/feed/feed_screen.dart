@@ -11,6 +11,7 @@ import '../activities/activities_hub_screen.dart';
 import '../backup/backup_screen.dart';
 import '../create/create_memory_screen.dart';
 import '../dev/sample_data.dart';
+import '../people/people_screen.dart';
 import '../profile/profile_setup_screen.dart';
 import 'widgets/memory_card.dart';
 
@@ -67,6 +68,12 @@ class _FeedScreenState extends State<FeedScreen> {
         titleSpacing: 20,
         title: const AppText('senss', variant: AppTextVariant.titleL),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PeopleScreen())),
+            icon: const Icon(Icons.groups_outlined, size: 26),
+            tooltip: 'Personas',
+          ),
           IconButton(
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const ProfileSetupScreen())),

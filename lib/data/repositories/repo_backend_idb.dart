@@ -3,6 +3,7 @@ import 'package:idb_shim/idb_browser.dart';
 import '../models/audiography.dart';
 import '../models/memory.dart';
 import '../models/memory_with_audios.dart';
+import '../models/person.dart';
 import 'repo_backend.dart';
 
 RepoBackend createRepoBackend() => IdbRepoBackend();
@@ -13,13 +14,14 @@ class IdbRepoBackend implements RepoBackend {
   static const _dbName = 'senss_db';
   static const _mem = 'memories';
   static const _aud = 'audiographies';
+  static const _ppl = 'people';
 
   Database? _db;
 
   Future<Database> _open() async {
     return _db ??= await idbFactoryBrowser.open(
       _dbName,
-      version: 1,
+      version: 2,
       onUpgradeNeeded: (e) {
         final db = e.database;
         if (!db.objectStoreNames.contains(_mem)) {
@@ -27,6 +29,9 @@ class IdbRepoBackend implements RepoBackend {
         }
         if (!db.objectStoreNames.contains(_aud)) {
           db.createObjectStore(_aud, keyPath: 'id');
+        }
+        if (!db.objectStoreNames.contains(_ppl)) {
+          db.createObjectStore(_ppl, keyPath: 'id');
         }
       },
     );
@@ -121,4 +126,26 @@ class IdbRepoBackend implements RepoBackend {
 
   @override
   Future<void> deleteAudiography(String id) => _delete(_aud, id);
+
+  Person _ppl_(Map<String, Object?> m) => Person(
+        id: m['id'] as String,
+        name: m['name'] as String,
+        relationship: m['relationship'] as String? ?? '',
+        portraitPath: m['portrait_path'] as String? ?? '',
+        createdAt:
+            DateTime.fromMillisecondsSinceEpoch((m['created_at'] as num).toInt()),
+      );
+
+  @override
+  Future<void> insertPerson(Person person) => _put(_ppl, person.toMap());
+
+  @override
+  Future<List<Person>> getPeople() async {
+    final list = (await _all(_ppl)).map(_ppl_).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return list;
+  }
+
+  @override
+  Future<void> deletePerson(String id) => _delete(_ppl, id);
 }

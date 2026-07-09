@@ -11,6 +11,7 @@ import 'match_pairs_screen.dart';
 import 'puzzle_screen.dart';
 import 'tell_me_screen.dart';
 import 'voice_to_memory_screen.dart';
+import 'who_is_face_screen.dart';
 import 'who_is_it_screen.dart';
 
 /// Modo "Juntos": actividades de reminiscencia que la familia hace con la
@@ -20,12 +21,23 @@ class ActivitiesHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final feed = context.watch<MemoryProvider>().feed;
+    final provider = context.watch<MemoryProvider>();
+    final feed = provider.feed;
     final voices = voicesOf(feed);
     final authors = voices.map((v) => v.audio.authorName).toSet();
     final withEmotion = voices.where((v) => v.audio.emotionTag != null);
+    final faces = provider.people.where((p) => p.hasPortrait).toList();
 
     final activities = <_Activity>[
+      _Activity(
+        icon: Icons.face_retouching_natural_rounded,
+        color: const Color(0xFF6E56CF),
+        title: '¿De quién es esta cara?',
+        subtitle: 'Reconocer a los seres queridos',
+        enabled: faces.length >= 2,
+        need: 'Añade al menos 2 personas con foto (botón Personas).',
+        builder: () => WhoIsFaceScreen(people: faces),
+      ),
       _Activity(
         icon: Icons.record_voice_over_rounded,
         color: const Color(0xFFE5484D),

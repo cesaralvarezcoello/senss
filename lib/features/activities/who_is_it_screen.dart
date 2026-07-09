@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
 import '../../design/tokens.dart';
+import '../../state/profile_store.dart';
 import 'activity_kit.dart';
 
 /// Reto: suena una voz; ¿de quién es? Refuerza el reconocimiento de las
@@ -23,6 +25,7 @@ class _WhoIsItScreenState extends State<WhoIsItScreen> {
   final _player = AudioPlayerService();
   late final List<Voice> _voices;
   late final List<String> _authors;
+  late final int _choices;
 
   late Voice _target;
   late List<String> _options;
@@ -34,6 +37,7 @@ class _WhoIsItScreenState extends State<WhoIsItScreen> {
     super.initState();
     _voices = voicesOf(widget.feed);
     _authors = _voices.map((v) => v.audio.authorName).toSet().toList();
+    _choices = context.read<ProfileStore>().profile.choiceCount;
     _newRound();
   }
 
@@ -49,7 +53,7 @@ class _WhoIsItScreenState extends State<WhoIsItScreen> {
         _authors.where((a) => a != _target.audio.authorName).toList();
     _options = _picker.shuffle([
       _target.audio.authorName,
-      ..._picker.sample(others, 2),
+      ..._picker.sample(others, _choices - 1),
     ]);
     _answered = false;
     _chosen = null;

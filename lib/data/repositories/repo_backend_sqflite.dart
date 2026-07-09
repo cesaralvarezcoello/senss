@@ -4,6 +4,7 @@ import '../database/app_database.dart';
 import '../models/audiography.dart';
 import '../models/memory.dart';
 import '../models/memory_with_audios.dart';
+import '../models/person.dart';
 import 'repo_backend.dart';
 
 RepoBackend createRepoBackend() => SqfliteRepoBackend();
@@ -72,5 +73,25 @@ class SqfliteRepoBackend implements RepoBackend {
   Future<void> deleteAudiography(String id) async {
     final db = await _db.database;
     await db.delete(Audiography.table, where: 'id = ?', whereArgs: [id]);
+  }
+
+  @override
+  Future<void> insertPerson(Person person) async {
+    final db = await _db.database;
+    await db.insert(Person.table, person.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<List<Person>> getPeople() async {
+    final db = await _db.database;
+    final rows = await db.query(Person.table, orderBy: 'created_at ASC');
+    return rows.map(Person.fromMap).toList();
+  }
+
+  @override
+  Future<void> deletePerson(String id) async {
+    final db = await _db.database;
+    await db.delete(Person.table, where: 'id = ?', whereArgs: [id]);
   }
 }

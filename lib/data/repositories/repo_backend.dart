@@ -17,6 +17,11 @@ abstract class RepoBackend {
   Future<void> updateAudiography(Audiography audio);
   Future<void> deleteMemory(String id);
   Future<void> deleteAudiography(String id);
+
+  // Personas (para juegos de reconocimiento de caras).
+  Future<void> insertPerson(Person person);
+  Future<List<Person>> getPeople();
+  Future<void> deletePerson(String id);
 }
 
 /// Crea el backend por defecto de la plataforma (importación condicional).

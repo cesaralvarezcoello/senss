@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:senss/app.dart';
+import 'package:senss/data/models/person.dart';
 import 'package:senss/data/repositories/memory_repository.dart';
 import 'package:senss/state/memory_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _EmptyFeedRepository extends MemoryRepository {
   @override
   Future<List<MemoryWithAudios>> getFeed() async => const [];
+
+  @override
+  Future<List<Person>> getPeople() async => const [];
 }
 
 Future<void> _pumpApp(WidgetTester tester) async {

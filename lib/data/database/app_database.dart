@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/audiography.dart';
 import '../models/memory.dart';
+import '../models/person.dart';
 
 /// Inicializa y expone la base de datos SQLite local (100% en el dispositivo).
 ///
@@ -14,7 +15,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _dbName = 'senss.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   Database? _db;
 
@@ -34,10 +35,26 @@ class AppDatabase {
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: _createSchema,
+      onUpgrade: (db, oldV, newV) async {
+        if (oldV < 2) await _createPeople(db);
+      },
     );
   }
 
+  Future<void> _createPeople(Database db) async {
+    await db.execute('''
+      CREATE TABLE ${Person.table} (
+        id            TEXT    PRIMARY KEY,
+        name          TEXT    NOT NULL,
+        relationship  TEXT,
+        portrait_path TEXT,
+        created_at    INTEGER NOT NULL
+      )
+    ''');
+  }
+
   Future<void> _createSchema(Database db, int version) async {
+    await _createPeople(db);
     await db.execute('''
       CREATE TABLE ${Memory.table} (
         id          TEXT    PRIMARY KEY,

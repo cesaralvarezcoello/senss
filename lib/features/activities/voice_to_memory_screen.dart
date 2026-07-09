@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../data/models/memory.dart';
 import '../../data/repositories/memory_repository.dart';
@@ -6,6 +7,7 @@ import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
 import '../../design/tokens.dart';
+import '../../state/profile_store.dart';
 import 'activity_kit.dart';
 
 /// Reto: suena una voz; ¿a qué foto (recuerdo) pertenece? Une la voz con su
@@ -23,6 +25,7 @@ class _VoiceToMemoryScreenState extends State<VoiceToMemoryScreen> {
   final _player = AudioPlayerService();
   late final List<Voice> _voices;
   late final List<Memory> _memories;
+  late final int _choices;
 
   late Voice _target;
   late List<Memory> _options;
@@ -34,6 +37,7 @@ class _VoiceToMemoryScreenState extends State<VoiceToMemoryScreen> {
     super.initState();
     _voices = voicesOf(widget.feed);
     _memories = widget.feed.map((m) => m.memory).toList();
+    _choices = context.read<ProfileStore>().profile.choiceCount;
     _newRound();
   }
 
@@ -49,7 +53,7 @@ class _VoiceToMemoryScreenState extends State<VoiceToMemoryScreen> {
         _memories.where((m) => m.id != _target.memory.id).toList();
     _options = _picker.shuffle([
       _target.memory,
-      ..._picker.sample(others, 2),
+      ..._picker.sample(others, _choices - 1),
     ]);
     _answered = false;
     _chosenId = null;
