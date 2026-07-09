@@ -84,6 +84,7 @@ class WebMediaStore implements MediaStore {
       'wav' => 'audio/wav',
       'mp3' => 'audio/mpeg',
       'ogg' => 'audio/ogg',
+      'webm' => 'audio/webm',
       _ => 'audio/mp4',
     };
     // data: URI reproducible por just_audio en la web.

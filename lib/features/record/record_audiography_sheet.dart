@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
-import '../../data/media/media_store.dart';
 import '../../data/services/audio_recorder_service.dart';
 import '../../state/memory_provider.dart';
 
@@ -23,7 +22,7 @@ class _RecordAudiographySheetState extends State<RecordAudiographySheet> {
   final _authorController = TextEditingController();
 
   _Stage _stage = _Stage.intro;
-  String? _recordedPath;
+  String? _recordedRef;
   String? _emotion;
   DateTime? _startedAt;
   int _durationMs = 0;
@@ -41,25 +40,25 @@ class _RecordAudiographySheetState extends State<RecordAudiographySheet> {
       _snack('Necesitamos permiso para usar el micrófono.');
       return;
     }
-    final path = await Media.store.newRecordingPath();
-    if (path == null) {
-      _snack('La grabación aún no está disponible en el navegador.');
-      return;
-    }
-    await _recorder.start(path);
+    await _recorder.startRecording();
     setState(() {
       _stage = _Stage.recording;
-      _recordedPath = path;
       _startedAt = DateTime.now();
     });
   }
 
   Future<void> _stopRecording() async {
-    await _recorder.stop();
+    final ref = await _recorder.stopAndSave();
     final elapsed = _startedAt == null
         ? 0
         : DateTime.now().difference(_startedAt!).inMilliseconds;
+    if (ref == null) {
+      _snack('No se pudo guardar la grabación. Inténtalo de nuevo.');
+      setState(() => _stage = _Stage.intro);
+      return;
+    }
     setState(() {
+      _recordedRef = ref;
       _durationMs = elapsed;
       _stage = _Stage.review;
     });
@@ -67,12 +66,12 @@ class _RecordAudiographySheetState extends State<RecordAudiographySheet> {
 
   Future<void> _save() async {
     final author = _authorController.text.trim();
-    if (_recordedPath == null || author.isEmpty) return;
+    if (_recordedRef == null || author.isEmpty) return;
 
     setState(() => _busy = true);
     await context.read<MemoryProvider>().addAudiography(
           memoryId: widget.memoryId,
-          audioPath: _recordedPath!,
+          audioPath: _recordedRef!,
           authorName: author,
           emotionTag: _emotion,
           durationMs: _durationMs,

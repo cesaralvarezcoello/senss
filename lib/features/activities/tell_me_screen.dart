@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/media/media_store.dart';
 import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../data/services/audio_recorder_service.dart';
@@ -30,7 +29,6 @@ class _TellMeScreenState extends State<TellMeScreen> {
   late MemoryWithAudios _memory;
   bool _recording = false;
   bool _busy = false;
-  String? _path;
   DateTime? _startedAt;
 
   @override
@@ -62,12 +60,7 @@ class _TellMeScreenState extends State<TellMeScreen> {
       return;
     }
     await _player.stop();
-    _path = await Media.store.newRecordingPath();
-    if (_path == null) {
-      _snack('La grabación aún no está disponible en el navegador.');
-      return;
-    }
-    await _recorder.start(_path!);
+    await _recorder.startRecording();
     setState(() {
       _recording = true;
       _startedAt = DateTime.now();
@@ -76,14 +69,14 @@ class _TellMeScreenState extends State<TellMeScreen> {
 
   Future<void> _stopRecording() async {
     setState(() => _busy = true);
-    await _recorder.stop();
+    final ref = await _recorder.stopAndSave();
     final ms = _startedAt == null
         ? 0
         : DateTime.now().difference(_startedAt!).inMilliseconds;
-    if (_path != null) {
+    if (ref != null) {
       await context.read<MemoryProvider>().addAudiography(
             memoryId: _memory.memory.id,
-            audioPath: _path!,
+            audioPath: ref,
             authorName: 'Mi voz',
             emotionTag: null,
             durationMs: ms,
@@ -94,6 +87,10 @@ class _TellMeScreenState extends State<TellMeScreen> {
       _recording = false;
       _busy = false;
     });
+    if (ref == null) {
+      _snack('No se pudo guardar la grabación. Inténtalo de nuevo.');
+      return;
+    }
     await showCelebration(context,
         message: '¡Gracias por contarme!',
         sub: 'Tu recuerdo quedó guardado.',
