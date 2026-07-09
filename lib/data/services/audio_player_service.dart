@@ -47,6 +47,22 @@ class AudioPlayerService extends ChangeNotifier {
   /// ¿Es [path] la pista activa (sonando o en pausa)?
   bool isCurrent(String path) => currentPath == path;
 
+  /// Índice de la pista activa dentro de la cola (null si no hay ninguna).
+  int? get currentIndex => _index;
+
+  /// Cuántas pistas hay en la cola actual.
+  int get queueLength => _queue.length;
+
+  /// Salta a la pista [index] de la cola (para el dial giratorio). Si estaba en
+  /// pausa, reanuda; así, girar el dial siempre deja sonando la voz elegida.
+  Future<void> skipTo(int index) async {
+    if (index < 0 || index >= _queue.length) return;
+    await _player.seek(Duration.zero, index: index);
+    _index = index;
+    notifyListeners();
+    if (!_player.playing) await _player.play();
+  }
+
   /// Reproduce una única audiografía (referencia de medio, agnóstica).
   Future<void> playFile(String ref) async {
     await _player.stop();

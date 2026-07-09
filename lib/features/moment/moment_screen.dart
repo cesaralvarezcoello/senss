@@ -13,6 +13,7 @@ import '../../data/models/audiography.dart';
 import '../../data/repositories/memory_repository.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../design/components/app_button.dart';
+import '../../design/components/audio_dial.dart';
 import '../../design/components/app_glass.dart';
 import '../../design/components/app_text.dart';
 import '../../design/components/ref_image.dart';
@@ -41,6 +42,7 @@ class _MomentScreenState extends State<MomentScreen> {
   String? _shownId;
   Color _amb = const Color(0xFFE08A2E);
   Color _amb2 = const Color(0xFFC7562F);
+  Profile _profile = const Profile();
   AppCopy _copy = const AppCopy(Profile());
   final _rand = Random();
   bool _invite = false;
@@ -144,6 +146,15 @@ class _MomentScreenState extends State<MomentScreen> {
     }
   }
 
+  /// El dial pidió ir a la voz [i] del recuerdo: cárgalo (si hace falta) y salta.
+  Future<void> _seekAudio(MemoryWithAudios m, int i) async {
+    if (i < 0 || i >= m.audios.length) return;
+    if (!_playingThisMemory(m)) {
+      await _player.playSequence(m.audios.map((a) => a.audioPath).toList());
+    }
+    await _player.skipTo(i);
+  }
+
   Future<void> _openCaregiver() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -184,7 +195,8 @@ class _MomentScreenState extends State<MomentScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<MemoryProvider>();
     final feed = provider.feed;
-    _copy = AppCopy(context.watch<ProfileStore>().profile);
+    _profile = context.watch<ProfileStore>().profile;
+    _copy = AppCopy(_profile);
 
     if (provider.loading && feed.isEmpty) {
       return const Scaffold(
@@ -449,84 +461,61 @@ class _MomentScreenState extends State<MomentScreen> {
         final playingHere = _playingThisMemory(m);
         final isPlaying = playingHere && _player.isPlaying;
         final active = _activeAudio(m);
+        final activeIndex =
+            active == null ? 0 : m.audios.indexOf(active).clamp(0, m.audios.length - 1);
         final name = active != null ? _split(active.authorName).$1 : '';
 
         return Column(
           children: [
-            GestureDetector(
-              onTap: hasVoices ? () => _togglePlay(m) : null,
-              child: SizedBox(
-                width: 116,
-                height: 116,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (playingHere)
-                      SizedBox(
-                        width: 116,
-                        height: 116,
-                        child: _ProgressRing(player: _player, color: _amb),
-                      )
-                    else
-                      SizedBox(
-                        width: 116,
-                        height: 116,
-                        child: CircularProgressIndicator(
-                          value: 1,
-                          strokeWidth: 4,
-                          valueColor: AlwaysStoppedAnimation(
-                              Colors.white.withValues(alpha: hasVoices ? 0.3 : 0.12)),
-                          backgroundColor: Colors.white.withValues(alpha: 0.06),
-                        ),
-                      ),
-                    ClipOval(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                        child: Container(
-                          width: 92,
-                          height: 92,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: hasVoices
-                                  ? [
-                                      _amb.withValues(alpha: 0.92),
-                                      _amb2.withValues(alpha: 0.92)
-                                    ]
-                                  : [
-                                      Colors.white.withValues(alpha: 0.18),
-                                      Colors.white.withValues(alpha: 0.1)
-                                    ],
-                            ),
-                            border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                width: 1.5),
-                          ),
-                          child: Icon(
-                            isPlaying
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            size: 48,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            StreamBuilder<Duration>(
+              stream: _player.positionStream,
+              builder: (context, pSnap) {
+                return StreamBuilder<Duration?>(
+                  stream: _player.durationStream,
+                  builder: (context, dSnap) {
+                    final pos = pSnap.data ?? Duration.zero;
+                    final total = dSnap.data ?? Duration.zero;
+                    final progress = (playingHere && total.inMilliseconds > 0)
+                        ? (pos.inMilliseconds / total.inMilliseconds)
+                            .clamp(0.0, 1.0)
+                        : 0.0;
+                    return AudioDial(
+                      count: m.audios.length,
+                      index: activeIndex,
+                      playing: isPlaying,
+                      progress: progress,
+                      color: _amb,
+                      color2: _amb2,
+                      scale: _profile.iconScale,
+                      enabled: hasVoices,
+                      onPlayPause: () => _togglePlay(m),
+                      onSeek: (i) => _seekAudio(m, i),
+                    );
+                  },
+                );
+              },
             ),
             const SizedBox(height: AppSpace.md),
             AppText(
               hasVoices
-                  ? (isPlaying ? _copy.nowPlaying(name) : _copy.playHint(name))
+                  ? (isPlaying
+                      ? _copy.nowPlaying(name)
+                      : _copy.playHint(name))
                   : _copy.noVoices,
               variant: AppTextVariant.bodyStrong,
               tone: AppTone.onPhoto,
               align: TextAlign.center,
             ),
+            if (hasVoices && m.audios.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: AppText(
+                  'Voz ${activeIndex + 1} de ${m.audios.length} · gira para escuchar',
+                  variant: AppTextVariant.caption,
+                  tone: AppTone.onPhoto,
+                  align: TextAlign.center,
+                ),
+              ),
           ],
         );
       },
@@ -634,33 +623,3 @@ class _MomentScreenState extends State<MomentScreen> {
   }
 }
 
-class _ProgressRing extends StatelessWidget {
-  final AudioPlayerService player;
-  final Color color;
-  const _ProgressRing({required this.player, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<Duration?>(
-      stream: player.durationStream,
-      builder: (context, dSnap) {
-        final total = dSnap.data ?? Duration.zero;
-        return StreamBuilder<Duration>(
-          stream: player.positionStream,
-          builder: (context, pSnap) {
-            final pos = pSnap.data ?? Duration.zero;
-            final maxMs = total.inMilliseconds;
-            final value =
-                maxMs <= 0 ? null : (pos.inMilliseconds / maxMs).clamp(0.0, 1.0);
-            return CircularProgressIndicator(
-              value: value,
-              strokeWidth: 4,
-              valueColor: AlwaysStoppedAnimation(color),
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-            );
-          },
-        );
-      },
-    );
-  }
-}
