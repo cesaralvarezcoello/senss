@@ -7,8 +7,11 @@ import 'state/memory_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Habilita formato de fechas en español (usado por TimeAgo.fullDate).
-  await initializeDateFormatting('es');
+
+  // La inicialización de fechas no debe impedir que la app arranque.
+  try {
+    await initializeDateFormatting('es');
+  } catch (_) {}
 
   runApp(
     ChangeNotifierProvider(
