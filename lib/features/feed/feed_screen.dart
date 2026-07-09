@@ -7,6 +7,7 @@ import '../../design/components/app_button.dart';
 import '../../design/components/app_text.dart';
 import '../../design/tokens.dart';
 import '../../state/memory_provider.dart';
+import '../activities/activities_hub_screen.dart';
 import '../backup/backup_screen.dart';
 import '../create/create_memory_screen.dart';
 import 'widgets/memory_card.dart';
@@ -40,6 +41,12 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  void _openActivities() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ActivitiesHubScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -48,6 +55,11 @@ class _FeedScreenState extends State<FeedScreen> {
         titleSpacing: 20,
         title: const AppText('senss', variant: AppTextVariant.titleL),
         actions: [
+          IconButton(
+            onPressed: _openActivities,
+            icon: const Icon(Icons.celebration_outlined, size: 26),
+            tooltip: 'Actividades juntos',
+          ),
           IconButton(
             onPressed: _openBackup,
             icon: const Icon(Icons.shield_outlined, size: 26),
