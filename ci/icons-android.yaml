@@ -1,0 +1,6 @@
+flutter_launcher_icons:
+  image_path: "assets/icon/senss_icon.png"
+  android: true
+  ios: false
+  adaptive_icon_background: "#E08A2E"
+  adaptive_icon_foreground: "assets/icon/senss_icon.png"

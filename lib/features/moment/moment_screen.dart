@@ -354,20 +354,20 @@ class _MomentScreenState extends State<MomentScreen> {
           label: 'Para quienes te quieren',
           child: GestureDetector(
             onTap: _openCaregiver,
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Container(
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x66000000), blurRadius: 10),
+                ],
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/icon/senss_icon.png',
                   width: 48,
                   height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.16),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.28)),
-                  ),
-                  child: const Icon(Icons.favorite_rounded,
-                      color: Colors.white, size: 24),
+                  fit: BoxFit.cover,
                 ),
               ),
             ),

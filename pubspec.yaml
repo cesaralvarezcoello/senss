@@ -60,8 +60,25 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1   # genera el icono de la app en todas las plataformas
+
+# Icono de la app. Pon tu PNG en assets/icon/senss_icon.png (1024x1024) y la CI
+# genera todos los tamaños (Android/iOS/web) automáticamente.
+flutter_launcher_icons:
+  image_path: "assets/icon/senss_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    background_color: "#E08A2E"
+    theme_color: "#E08A2E"
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icon/
+    - assets/images/onboarding/
   # El add-on de moderación NSFW (opcional) declara aquí su asset
   # `assets/models/` al habilitarlo. Ver optional/nsfw_moderation/README.md.

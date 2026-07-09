@@ -102,36 +102,31 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     controller: _pages,
                     onPageChanged: (i) => setState(() => _page = i),
                     children: [
-                      _ScenePage(
+                      _IllustrationPage(
+                        anim: _anim,
+                        image: 'assets/icon/senss_icon.png',
                         title: 'Tus recuerdos, a salvo',
-                        scene: AnimatedBuilder(
-                          animation: _anim,
-                          builder: (_, __) => CustomPaint(
-                            size: const Size(220, 220),
-                            painter: _FramePainter(_anim.value),
-                          ),
-                        ),
+                        subtitle: 'Solo tú los guardas, aquí en tu teléfono.',
                       ),
-                      _voicePage(),
-                      _ScenePage(
-                        title: 'Toda una vida, en un lugar',
-                        scene: AnimatedBuilder(
-                          animation: _anim,
-                          builder: (_, __) => CustomPaint(
-                            size: const Size(260, 220),
-                            painter: _ConstellationPainter(_anim.value),
-                          ),
-                        ),
+                      _IllustrationPage(
+                        anim: _anim,
+                        image: 'assets/images/onboarding/voices.png',
+                        title: 'El poder de una voz',
+                        subtitle: 'Tócala y escúchala.',
+                        onTap: _hearVoice,
+                        playing: _playing,
                       ),
-                      _ScenePage(
-                        title: 'Juntos, sin prisa',
-                        scene: AnimatedBuilder(
-                          animation: _anim,
-                          builder: (_, __) => CustomPaint(
-                            size: const Size(240, 220),
-                            painter: _HeartsPainter(_anim.value),
-                          ),
-                        ),
+                      _IllustrationPage(
+                        anim: _anim,
+                        image: 'assets/images/onboarding/connection.png',
+                        title: 'Pide sus voces',
+                        subtitle: 'Invita a quienes amas a dejar un recuerdo.',
+                      ),
+                      _IllustrationPage(
+                        anim: _anim,
+                        image: 'assets/images/onboarding/legacy.png',
+                        title: 'Un tesoro para heredar',
+                        subtitle: 'Toda una vida de recuerdos, guardada con amor.',
                       ),
                     ],
                   ),
@@ -174,34 +169,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _voicePage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          GestureDetector(
-            onTap: _hearVoice,
-            child: AnimatedBuilder(
-              animation: _anim,
-              builder: (_, __) => _VoiceOrb(t: _anim.value, playing: _playing),
-            ),
-          ),
-          const SizedBox(height: AppSpace.xl),
-          const AppText('Una voz que abraza',
-              variant: AppTextVariant.display,
-              tone: AppTone.onPhoto,
-              align: TextAlign.center),
-          const SizedBox(height: AppSpace.sm),
-          const AppText('Tócala y siéntelo',
-              variant: AppTextVariant.body,
-              tone: AppTone.onPhoto,
-              align: TextAlign.center),
-        ],
-      ),
-    );
-  }
-
   Uint8List _synthVoice() {
     const sr = 22050;
     const seconds = 4.0;
@@ -239,12 +206,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-/// Página visual: una escena grande arriba y un título corto abajo. Sin
-/// párrafos: la imagen manda.
-class _ScenePage extends StatelessWidget {
-  final Widget scene;
+/// Página visual: una **ilustración** grande (la imagen manda) con un título
+/// corto y un subtítulo breve. Si es interactiva (`onTap`), muestra ondas
+/// alrededor de la tarjeta y una insignia de reproducción para escuchar una voz.
+class _IllustrationPage extends StatelessWidget {
+  final AnimationController anim;
+  final String image;
   final String title;
-  const _ScenePage({required this.scene, required this.title});
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final bool playing;
+  const _IllustrationPage({
+    required this.anim,
+    required this.image,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+    this.playing = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -253,193 +232,82 @@ class _ScenePage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          scene,
+          GestureDetector(
+            onTap: onTap,
+            child: SizedBox(
+              width: 300,
+              height: 300,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (onTap != null)
+                    AnimatedBuilder(
+                      animation: anim,
+                      builder: (_, __) => CustomPaint(
+                        size: const Size(300, 300),
+                        painter: _WavePainter(anim.value, playing),
+                      ),
+                    ),
+                  // La foto como un objeto atesorado: marco cálido y sombra.
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.55), width: 2),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Color(0x99000000),
+                            blurRadius: 40,
+                            offset: Offset(0, 18)),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(26),
+                      child: Image.asset(image,
+                          width: 264, height: 264, fit: BoxFit.cover),
+                    ),
+                  ),
+                  if (onTap != null)
+                    Container(
+                      width: 74,
+                      height: 74,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.34),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            width: 2),
+                      ),
+                      child: Icon(
+                          playing
+                              ? Icons.graphic_eq_rounded
+                              : Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 40),
+                    ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: AppSpace.xxl),
           AppText(title,
               variant: AppTextVariant.display,
               tone: AppTone.onPhoto,
               align: TextAlign.center),
+          if (subtitle != null) ...[
+            const SizedBox(height: AppSpace.sm),
+            AppText(subtitle!,
+                variant: AppTextVariant.body,
+                tone: AppTone.onPhoto,
+                align: TextAlign.center),
+          ],
         ],
       ),
     );
   }
 }
 
-// ------- Escenas pintadas -------
-
-Path _heartPath(Size s) {
-  final p = Path();
-  p.moveTo(s.width * 0.5, s.height * 0.35);
-  p.cubicTo(s.width * 0.2, -s.height * 0.02, -s.width * 0.25, s.height * 0.55,
-      s.width * 0.5, s.height);
-  p.cubicTo(s.width * 1.25, s.height * 0.55, s.width * 0.8, -s.height * 0.02,
-      s.width * 0.5, s.height * 0.35);
-  p.close();
-  return p;
-}
-
-/// Escena 1: un marco de foto cálido con un corazón que late dentro.
-class _FramePainter extends CustomPainter {
-  final double t;
-  _FramePainter(this.t);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final r = Rect.fromLTWH(size.width * 0.1, size.height * 0.08,
-        size.width * 0.8, size.height * 0.84);
-    // Foto (degradado cálido).
-    final photo = RRect.fromRectAndRadius(r, const Radius.circular(22));
-    canvas.drawRRect(
-      photo,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE9A23B), Color(0xFFC7562F)],
-        ).createShader(r),
-    );
-    // Marco.
-    canvas.drawRRect(
-      photo,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..color = Colors.white.withValues(alpha: 0.85),
-    );
-    // Corazón que late.
-    final pulse = 1 + 0.08 * sin(t * 2 * pi * 2);
-    final hs = Size(size.width * 0.34 * pulse, size.height * 0.32 * pulse);
-    canvas.save();
-    canvas.translate(size.width * 0.5 - hs.width / 2,
-        size.height * 0.44 - hs.height / 2);
-    canvas.drawPath(
-      _heartPath(hs),
-      Paint()
-        ..color = Colors.white
-        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 4),
-    );
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_FramePainter old) => true;
-}
-
-/// Escena 3: una constelación de recuerdos a lo largo de una vida.
-class _ConstellationPainter extends CustomPainter {
-  final double t;
-  _ConstellationPainter(this.t);
-
-  static const _pts = <Offset>[
-    Offset(0.1, 0.7), Offset(0.28, 0.4), Offset(0.45, 0.62),
-    Offset(0.6, 0.3), Offset(0.75, 0.55), Offset(0.9, 0.28),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Offset p(int i) => Offset(_pts[i].dx * size.width, _pts[i].dy * size.height);
-    // Hilo.
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = Colors.white.withValues(alpha: 0.25);
-    for (var i = 0; i < _pts.length - 1; i++) {
-      canvas.drawLine(p(i), p(i + 1), line);
-    }
-    // Estrellas que brillan.
-    for (var i = 0; i < _pts.length; i++) {
-      final glow = 0.5 + 0.5 * sin(t * 2 * pi + i);
-      canvas.drawCircle(
-        p(i),
-        6 + 4 * glow,
-        Paint()
-          ..color = const Color(0xFFF0A344).withValues(alpha: 0.5 + 0.4 * glow)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-      canvas.drawCircle(p(i), 4, Paint()..color = Colors.white);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ConstellationPainter old) => true;
-}
-
-/// Escena 4: corazones juntos.
-class _HeartsPainter extends CustomPainter {
-  final double t;
-  _HeartsPainter(this.t);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final specs = [
-      [0.32, 0.55, 0.5, const Color(0xFFE5484D)],
-      [0.62, 0.5, 0.44, const Color(0xFFE86A9B)],
-      [0.5, 0.68, 0.4, const Color(0xFFF0A344)],
-    ];
-    for (var i = 0; i < specs.length; i++) {
-      final s = specs[i];
-      final float = 0.03 * sin(t * 2 * pi + i * 1.6);
-      final hs = Size(size.width * (s[2] as double), size.height * (s[2] as double));
-      canvas.save();
-      canvas.translate(size.width * (s[0] as double) - hs.width / 2,
-          size.height * ((s[1] as double) + float) - hs.height / 2);
-      canvas.drawPath(
-        _heartPath(hs),
-        Paint()
-          ..color = (s[3] as Color).withValues(alpha: 0.9)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
-      );
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(_HeartsPainter old) => true;
-}
-
-/// Orbe de voz que late y muestra ondas alrededor.
-class _VoiceOrb extends StatelessWidget {
-  final double t;
-  final bool playing;
-  const _VoiceOrb({required this.t, required this.playing});
-
-  @override
-  Widget build(BuildContext context) {
-    final pulse = 1 + 0.06 * sin(t * 2 * pi * 2);
-    return SizedBox(
-      width: 200,
-      height: 200,
-      child: CustomPaint(
-        painter: _WavePainter(t, playing),
-        child: Center(
-          child: Transform.scale(
-            scale: playing ? pulse : 1,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFF0A344), Color(0xFFC7562F)],
-                ),
-                boxShadow: [
-                  BoxShadow(color: Color(0x66E08A2E), blurRadius: 44, spreadRadius: 4),
-                ],
-              ),
-              child: Icon(
-                  playing ? Icons.graphic_eq_rounded : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 56),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// Ondas concéntricas que emanan alrededor de la tarjeta (más intensas al sonar).
 class _WavePainter extends CustomPainter {
   final double t;
   final bool playing;
@@ -448,10 +316,10 @@ class _WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final base = size.width * 0.32;
+    final base = size.width * 0.46;
     for (var ring = 0; ring < 3; ring++) {
       final phase = (t + ring / 3) % 1;
-      final r = base + phase * base * 0.9;
+      final r = base + phase * base * 0.4;
       final opacity = (1 - phase) * (playing ? 0.5 : 0.22);
       canvas.drawCircle(
         center,

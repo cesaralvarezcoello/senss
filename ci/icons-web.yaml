@@ -1,0 +1,8 @@
+flutter_launcher_icons:
+  image_path: "assets/icon/senss_icon.png"
+  android: false
+  ios: false
+  web:
+    generate: true
+    background_color: "#E08A2E"
+    theme_color: "#E08A2E"

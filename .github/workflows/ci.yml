@@ -116,6 +116,9 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      - name: Generar icono de la app
+        run: dart run flutter_launcher_icons -f ci/icons-android.yaml
+
       # Debug evita tener que configurar firma de release en CI.
       - name: Construir APK (debug)
         run: flutter build apk --debug
@@ -210,6 +213,9 @@ jobs:
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
 
       # --- APK (para instalar directamente / sideload) ---
+      - name: Generar icono de la app
+        run: dart run flutter_launcher_icons -f ci/icons-android.yaml
+
       # Gradle firma el "release" con la clave debug por defecto; la sustituimos
       # después con apksigner, sin tocar los ficheros Gradle (Groovy o Kotlin).
       - name: Construir APK (release)
@@ -346,6 +352,9 @@ jobs:
 
       - name: Instalar dependencias
         run: flutter pub get
+
+      - name: Generar icono de la app
+        run: dart run flutter_launcher_icons -f ci/icons-web.yaml
 
       # --pwa-strategy=none: sin service worker, así la web nunca queda cacheada
       # con una versión vieja (cada carga trae lo último).
