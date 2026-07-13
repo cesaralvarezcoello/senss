@@ -253,8 +253,10 @@ class _SideButton extends StatelessWidget {
   }
 }
 
-/// Orbe central de marca: el ícono de senss preside el control; una insignia
-/// inferior muestra play/pausa y se enciende al sonar.
+/// Botón central de play/pausa: un orbe premium con degradado de marca, brillo
+/// especular (cristal) y un glifo grande y centrado. El halo se intensifica al
+/// sonar. El glifo de play se centra ópticamente (el triángulo se corre un poco
+/// a la derecha para no verse desplazado).
 class _Orb extends StatelessWidget {
   final double diameter;
   final Color color;
@@ -271,70 +273,65 @@ class _Orb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badge = diameter * 0.46;
-    return SizedBox(
+    final glyph = diameter * 0.46;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOut,
       width: diameter,
       height: diameter,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: enabled
+              ? [color, color2]
+              : [
+                  Colors.white.withValues(alpha: 0.16),
+                  Colors.white.withValues(alpha: 0.08),
+                ],
+        ),
+        border: Border.all(
+            color: Colors.white.withValues(alpha: enabled ? 0.65 : 0.25),
+            width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(
+                alpha: enabled ? (playing ? 0.55 : 0.38) : 0.0),
+            blurRadius: playing ? 32 : 22,
+            spreadRadius: playing ? 1 : 0,
+          ),
+          const BoxShadow(
+              color: Color(0x55000000), blurRadius: 12, offset: Offset(0, 6)),
+        ],
+      ),
       child: Stack(
-        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 260),
-            width: diameter,
-            height: diameter,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.55), width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(
-                      alpha: enabled ? (playing ? 0.6 : 0.4) : 0.12),
-                  blurRadius: playing ? 34 : 22,
-                  spreadRadius: playing ? 2 : 0,
+          // Brillo especular arriba-izquierda (aspecto de cristal).
+          Align(
+            alignment: const Alignment(-0.35, -0.55),
+            child: Container(
+              width: diameter * 0.62,
+              height: diameter * 0.42,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(diameter),
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: enabled ? 0.32 : 0.14),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
                 ),
-              ],
-            ),
-            child: ClipOval(
-              child: enabled
-                  ? Image.asset('assets/icon/senss_icon.png', fit: BoxFit.cover)
-                  : ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                          Colors.black.withValues(alpha: 0.45),
-                          BlendMode.darken),
-                      child: Image.asset('assets/icon/senss_icon.png',
-                          fit: BoxFit.cover),
-                    ),
+              ),
             ),
           ),
-          Positioned(
-            bottom: -badge * 0.14,
-            child: Container(
-              width: badge,
-              height: badge,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: enabled
-                      ? [color, color2]
-                      : [
-                          Colors.white.withValues(alpha: 0.2),
-                          Colors.white.withValues(alpha: 0.12)
-                        ],
-                ),
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x66000000), blurRadius: 8),
-                ],
-              ),
-              child: Icon(
-                playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: badge * 0.6,
-              ),
+          // Glifo play/pausa, con centrado óptico del triángulo.
+          Transform.translate(
+            offset: Offset(playing ? 0 : diameter * 0.035, 0),
+            child: Icon(
+              playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: Colors.white.withValues(alpha: enabled ? 1 : 0.5),
+              size: glyph,
             ),
           ),
         ],
