@@ -25,6 +25,7 @@ import '../../state/profile_store.dart';
 import '../../utils/time_ago.dart';
 import '../activities/fog_reveal_screen.dart';
 import '../activities/play_memory_screen.dart';
+import '../converse/converse_screen.dart';
 import '../feed/feed_screen.dart';
 import '../record/record_audiography_sheet.dart';
 
@@ -162,6 +163,19 @@ class _MomentScreenState extends State<MomentScreen> {
     await _player.skipTo(i);
   }
 
+  /// Abre el modo conversación: senss habla y la persona responde hablando.
+  void _converse() {
+    _player.stop();
+    final feed = context.read<MemoryProvider>().feed;
+    if (feed.isEmpty) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ConverseScreen(
+        feed: feed,
+        startIndex: _index.clamp(0, feed.length - 1),
+      ),
+    ));
+  }
+
   /// Añade una nueva voz a ESTE recuerdo (las audiografías se acumulan con el
   /// tiempo). Abre la grabación; al guardar, el feed se refresca y aparece una
   /// burbuja más alrededor de la foto.
@@ -290,6 +304,13 @@ class _MomentScreenState extends State<MomentScreen> {
                   _playControl(m),
                   const SizedBox(height: AppSpace.lg),
                   _nameplate(m),
+                  const SizedBox(height: AppSpace.md),
+                  AppButton(
+                    label: 'Conversar con senss',
+                    icon: Icons.record_voice_over_rounded,
+                    variant: AppButtonVariant.glass,
+                    onPressed: _converse,
+                  ),
                   const SizedBox(height: AppSpace.md),
                   Row(
                     children: [
