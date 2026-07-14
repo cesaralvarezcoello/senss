@@ -48,6 +48,7 @@ class _ConverseScreenState extends State<ConverseScreen>
   String _caption = '';
 
   Profile _profile = const Profile();
+  bool _multiVoice = false;
 
   static const _questions = [
     '¿La recuerdas?',
@@ -70,6 +71,14 @@ class _ConverseScreenState extends State<ConverseScreen>
         vsync: this, duration: const Duration(milliseconds: 2200))
       ..repeat();
     _profile = context.read<ProfileStore>().profile;
+    // ¿Hay voces de 2+ personas distintas? Entonces invitamos a pedir por nombre.
+    final authors = <String>{};
+    for (final m in widget.feed) {
+      for (final a in m.audios) {
+        authors.add(_norm(_split(a.authorName).$1));
+      }
+    }
+    _multiVoice = authors.length >= 2;
     WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
@@ -130,11 +139,24 @@ class _ConverseScreenState extends State<ConverseScreen>
   }
 
   Future<void> _handle(String? text) async {
-    switch (_intentOf(text)) {
-      case _Intent.no:
-        await _say('Está bien. Descansa. Aquí estaré cuando quieras.');
-        _end();
+    final intent = _intentOf(text);
+    // "No quiero / basta" se respeta antes que nada.
+    if (intent == _Intent.no) {
+      await _say('Está bien. Descansa. Aquí estaré cuando quieras.');
+      _end();
+      return;
+    }
+    // Si nombró a una persona (o su parentesco), pon su voz — tiene prioridad.
+    if (text != null) {
+      final v = _findVoice(text);
+      if (v != null) {
+        await _playNamedVoice(v.$1, v.$2);
         return;
+      }
+    }
+    switch (intent) {
+      case _Intent.no:
+        return; // ya tratado arriba
       case _Intent.next:
         await _say('Vamos con otro.');
         await _nextMemory();
@@ -174,7 +196,9 @@ class _ConverseScreenState extends State<ConverseScreen>
   }
 
   Future<void> _offerNext() async {
-    await _say('¿Vemos otro recuerdo? Di "otra", o toca la flecha.');
+    await _say(_multiVoice
+        ? '¿Vemos otro recuerdo, o quieres escuchar a alguien? Dime un nombre.'
+        : '¿Vemos otro recuerdo? Di "otra", o toca la flecha.');
     await _autoListen();
   }
 
@@ -274,12 +298,74 @@ class _ConverseScreenState extends State<ConverseScreen>
 
   static String _norm(String s) {
     s = s.toLowerCase();
-    const from = 'áéíóúü';
-    const to = 'aeiouu';
+    const from = 'áéíóúüñ';
+    const to = 'aeiouun';
     for (var i = 0; i < from.length; i++) {
       s = s.replaceAll(from[i], to[i]);
     }
     return s;
+  }
+
+  /// Palabras (tokens a-z) de un texto, ya normalizadas.
+  static List<String> _words(String s) => _norm(s)
+      .split(RegExp(r'[^a-z]+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+
+  // Palabras vacías del parentesco ("tu hija" -> {hija}).
+  static const _relStop = {
+    'tu', 'mi', 'su', 'el', 'la', 'los', 'las', 'de', 'mis', 'tus', 'un', 'una'
+  };
+
+  /// Busca en TODO el feed una voz cuyo autor (nombre o parentesco) haya sido
+  /// nombrado en [text]. Prefiere el recuerdo actual en caso de empate.
+  /// Devuelve (índice de recuerdo, índice de audio) o null.
+  (int, int)? _findVoice(String text) {
+    final said = _words(text).toSet();
+    if (said.isEmpty) return null;
+    // Recorre primero el recuerdo actual, luego el resto (empates -> actual).
+    final order = <int>[
+      _index.clamp(0, widget.feed.length - 1),
+      for (var i = 0; i < widget.feed.length; i++)
+        if (i != _index) i,
+    ];
+    var bestScore = 0;
+    (int, int)? best;
+    for (final mi in order) {
+      final audios = widget.feed[mi].audios;
+      for (var ai = 0; ai < audios.length; ai++) {
+        final (n, r) = _split(audios[ai].authorName);
+        var score = 0;
+        for (final w in _words(n)) {
+          if (w.length >= 3 && said.contains(w)) score += 2;
+        }
+        for (final w in _words(r)) {
+          if (w.length >= 3 && !_relStop.contains(w) && said.contains(w)) {
+            score += 1;
+          }
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = (mi, ai);
+        }
+      }
+    }
+    return best;
+  }
+
+  Future<void> _playNamedVoice(int mem, int audio) async {
+    final m = widget.feed[mem];
+    if (audio < 0 || audio >= m.audios.length) return;
+    final a = m.audios[audio];
+    final (n, r) = _split(a.authorName);
+    if (mem != _index) {
+      _index = mem;
+      if (mounted) setState(() {}); // cambia la foto de fondo al recuerdo suyo
+    }
+    await _say(r.isEmpty ? 'Claro, aquí está la voz de $n.' : 'Claro, aquí está $n, $r.');
+    await _playVoice(a);
+    await _say(r.isEmpty ? 'Esa fue $n.' : 'Esa fue $n, $r.');
+    await _offerNext();
   }
 
   _Intent _intentOf(String? text) {
