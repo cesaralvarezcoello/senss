@@ -11,6 +11,7 @@ import '../../data/models/audiography.dart';
 import '../../data/models/memory_with_audios.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../data/services/tts_service.dart';
+import '../../state/memory_provider.dart';
 import '../../design/components/app_text.dart';
 import '../../design/components/ref_image.dart';
 import '../../design/tokens.dart';
@@ -40,6 +41,7 @@ class _ConverseScreenState extends State<ConverseScreen>
   final SpeechToText _stt = SpeechToText();
   final AudioPlayerService _player = AudioPlayerService();
   late final AnimationController _anim;
+  late final MemoryProvider _memories;
 
   bool _sttReady = false;
   int _index = 0;
@@ -49,6 +51,7 @@ class _ConverseScreenState extends State<ConverseScreen>
 
   Profile _profile = const Profile();
   bool _multiVoice = false;
+  final Set<String> _justCompleted = {}; // recuerdos ya preguntados esta sesión
 
   static const _questions = [
     '¿La recuerda?',
@@ -71,6 +74,7 @@ class _ConverseScreenState extends State<ConverseScreen>
         vsync: this, duration: const Duration(milliseconds: 2200))
       ..repeat();
     _profile = context.read<ProfileStore>().profile;
+    _memories = context.read<MemoryProvider>();
     // ¿Hay voces de 2+ personas distintas? Entonces invitamos a pedir por nombre.
     final authors = <String>{};
     for (final m in widget.feed) {
@@ -116,6 +120,7 @@ class _ConverseScreenState extends State<ConverseScreen>
       if (m.memory.title.trim().isNotEmpty) {
         await _say('Este recuerdo se llama: ${m.memory.title.trim()}.');
       }
+      if (await _maybeComplete(m)) return;
       await _say('¿Qué ve en esta foto? Cuénteme.');
       await _autoListen();
       return;
@@ -158,6 +163,7 @@ class _ConverseScreenState extends State<ConverseScreen>
     }
     await _say('Con mucho cariño.');
     await _playAll(m);
+    if (await _maybeComplete(m)) return;
     await _say(_questions[_qi++ % _questions.length]);
     await _autoListen();
   }
@@ -324,6 +330,65 @@ class _ConverseScreenState extends State<ConverseScreen>
         RegExp(r'^(tu|mi|su)\s+', caseSensitive: false), 'su ');
     if (!RegExp(r'^su\s', caseSensitive: false).hasMatch(r)) r = 'su $r';
     return r;
+  }
+
+  // ---------- Completar datos hablando ----------
+
+  /// Si al recuerdo le falta nombre o descripción, senss lo pregunta y **guarda**
+  /// lo que la persona dice (enriquece el archivo, hablando). Pregunta una cosa
+  /// por visita; devuelve true si preguntó (y ya encadenó el siguiente turno).
+  Future<bool> _maybeComplete(MemoryWithAudios m) async {
+    if (_justCompleted.contains(m.memory.id)) return false;
+    final needTitle = m.memory.title.trim().isEmpty;
+    final needDesc = (m.memory.description ?? '').trim().isEmpty;
+    if (!needTitle && !needDesc) return false;
+    _justCompleted.add(m.memory.id); // una sola vez por sesión, sin insistir
+    if (needTitle) {
+      await _say('Este recuerdo aún no tiene nombre. ¿Cómo lo llamamos?');
+      final t = await _listen();
+      final i = _intentOf(t);
+      if (t != null && i != _Intent.no && i != _Intent.next) {
+        final title = _clean(t, 60);
+        await _saveMemory(m, title: title);
+        await _say('Gracias. Lo guardé: $title.');
+      } else {
+        await _say('Está bien, lo dejamos así.');
+      }
+      await _offerNext();
+      return true;
+    }
+    // Falta la descripción: pídela y guarda lo que cuente.
+    await _say('¿Qué recuerda de este día? Cuénteme.');
+    final t = await _listen();
+    final i = _intentOf(t);
+    if (t != null && t.trim().length >= 3 && i != _Intent.no && i != _Intent.next) {
+      await _saveMemory(m, description: _clean(t, 280));
+      await _say('Qué bonito. Lo guardé con su recuerdo.');
+    } else {
+      await _say('Gracias.');
+    }
+    await _offerNext();
+    return true;
+  }
+
+  Future<void> _saveMemory(MemoryWithAudios cur,
+      {String? title, String? description}) async {
+    final updated = cur.memory.copyWith(title: title, description: description);
+    // Actualiza el snapshot local para no volver a preguntar en esta sesión.
+    final i = _index.clamp(0, widget.feed.length - 1);
+    widget.feed[i] = MemoryWithAudios(updated, cur.audios);
+    try {
+      await _memories.updateMemory(updated);
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  static String _clean(String s, int max) {
+    var t = s.trim();
+    if (t.isEmpty) return t;
+    t = t[0].toUpperCase() + t.substring(1);
+    if (t.length > max) t = t.substring(0, max).trim();
+    return t;
   }
 
   Future<String?> _listenOnce() async {
