@@ -21,6 +21,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   late final TextEditingController _name;
   late AgeGroup _age;
   late Gender _gender;
+  late bool _memory;
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _name = TextEditingController(text: p.name);
     _age = p.age;
     _gender = p.gender;
+    _memory = p.memorySupport;
   }
 
   @override
@@ -38,14 +40,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Future<void> _save() async {
-    await context.read<ProfileStore>().save(
-          Profile(
-            name: _name.text.trim(),
-            age: _age,
-            gender: _gender,
-            configured: true,
-          ),
-        );
+    final store = context.read<ProfileStore>();
+    await store.save(
+      store.profile.copyWith(
+        name: _name.text.trim(),
+        age: _age,
+        gender: _gender,
+        configured: true,
+        memorySupport: _memory,
+      ),
+    );
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -70,6 +74,29 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               controller: _name,
               hint: 'Ej. Rosa',
               capitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: AppSpace.xl),
+            const AppText('¿Tiene Alzheimer o problemas de memoria?',
+                variant: AppTextVariant.titleM),
+            const SizedBox(height: AppSpace.xs),
+            const AppText(
+              'Nos ayuda a cuidarla mejor. No se comparte con nadie.',
+              variant: AppTextVariant.caption,
+              tone: AppTone.soft,
+            ),
+            const SizedBox(height: AppSpace.md),
+            _AgeCard(
+              label: 'Sí',
+              hint: 'senss se simplifica al máximo y prioriza la conversación',
+              selected: _memory,
+              onTap: () => setState(() => _memory = true),
+            ),
+            const SizedBox(height: AppSpace.sm),
+            _AgeCard(
+              label: 'No',
+              hint: 'Uso general',
+              selected: !_memory,
+              onTap: () => setState(() => _memory = false),
             ),
             const SizedBox(height: AppSpace.xl),
             const AppText('Edad', variant: AppTextVariant.titleM),
