@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -49,12 +50,15 @@ class _MomentScreenState extends State<MomentScreen> {
   Profile _profile = const Profile();
   List<Person> _people = const [];
   bool _autoConversed = false;
+  Timer? _dwellTimer;
+  String? _lastEngagedId; // recuerdo ya abordado por senss (no reabordar igual)
   AppCopy _copy = const AppCopy(Profile());
   final _rand = Random();
   bool _invite = false;
 
   @override
   void dispose() {
+    _dwellTimer?.cancel();
     _player.dispose();
     super.dispose();
   }
@@ -94,6 +98,8 @@ class _MomentScreenState extends State<MomentScreen> {
     } else {
       _player.stop();
     }
+    // Si tiene Alzheimer y se detiene en este recuerdo, senss lo aborda.
+    _armDwell(m);
     // De vez en cuando, invita a jugar con este recuerdo (sin obligar).
     if (_rand.nextInt(3) == 0) {
       setState(() => _invite = true);
@@ -142,6 +148,7 @@ class _MomentScreenState extends State<MomentScreen> {
   }
 
   void _next(int length) {
+    _dwellTimer?.cancel();
     _player.stop();
     setState(() => _index = (_index + 1) % length);
   }
@@ -166,17 +173,31 @@ class _MomentScreenState extends State<MomentScreen> {
     await _player.skipTo(i);
   }
 
-  /// Abre el modo conversación: senss habla y la persona responde hablando.
-  void _converse() {
-    _player.stop();
+  /// Abre el modo conversación centrado en el recuerdo actual. [greet] false al
+  /// lanzarse por "detenerse en un recuerdo" (dwell): va directo a hablar de él.
+  Future<void> _openConversation({required bool greet}) async {
+    _dwellTimer?.cancel();
     final feed = context.read<MemoryProvider>().feed;
     if (feed.isEmpty) return;
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => ConverseScreen(
-        feed: feed,
-        startIndex: _index.clamp(0, feed.length - 1),
-      ),
+    final idx = _index.clamp(0, feed.length - 1);
+    _lastEngagedId = feed[idx].memory.id; // no reabordar el mismo al volver
+    _player.stop();
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ConverseScreen(feed: feed, startIndex: idx, greet: greet),
     ));
+  }
+
+  /// Programa el "dwell": si la persona con Alzheimer se queda mirando este
+  /// recuerdo unos segundos, senss lo aborda hablando (salvo que ya lo hiciera).
+  void _armDwell(MemoryWithAudios m) {
+    _dwellTimer?.cancel();
+    if (!_profile.memorySupport) return;
+    if (m.memory.id == _lastEngagedId) return;
+    _dwellTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        _openConversation(greet: false);
+      }
+    });
   }
 
   /// Añade una nueva voz a ESTE recuerdo (las audiografías se acumulan con el
@@ -262,7 +283,7 @@ class _MomentScreenState extends State<MomentScreen> {
     if (_profile.memorySupport && !_autoConversed) {
       _autoConversed = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _converse();
+        if (mounted) _openConversation(greet: true);
       });
     }
 
@@ -321,7 +342,7 @@ class _MomentScreenState extends State<MomentScreen> {
                     label: 'Conversar con senss',
                     icon: Icons.record_voice_over_rounded,
                     variant: AppButtonVariant.glass,
-                    onPressed: _converse,
+                    onPressed: () => _openConversation(greet: true),
                   ),
                   const SizedBox(height: AppSpace.md),
                   Row(

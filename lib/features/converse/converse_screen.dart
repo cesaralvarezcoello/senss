@@ -27,7 +27,17 @@ import '../../state/profile_store.dart';
 class ConverseScreen extends StatefulWidget {
   final List<MemoryWithAudios> feed;
   final int startIndex;
-  const ConverseScreen({super.key, required this.feed, this.startIndex = 0});
+
+  /// Si saluda al entrar. Al lanzarse por "detenerse en un recuerdo" (dwell) se
+  /// omite el saludo y va directo a hablar de esa foto.
+  final bool greet;
+
+  const ConverseScreen({
+    super.key,
+    required this.feed,
+    this.startIndex = 0,
+    this.greet = true,
+  });
 
   @override
   State<ConverseScreen> createState() => _ConverseScreenState();
@@ -102,10 +112,12 @@ class _ConverseScreenState extends State<ConverseScreen>
   // ---------- Conversación ----------
 
   Future<void> _start() async {
-    final name = _profile.name.trim();
-    await _say(name.isEmpty
-        ? 'Hola. Soy senss. Estoy aquí con usted, sin prisa.'
-        : 'Hola, $name. Soy senss. Estoy aquí con usted, sin prisa.');
+    if (widget.greet) {
+      final name = _profile.name.trim();
+      await _say(name.isEmpty
+          ? 'Hola. Soy senss. Estoy aquí con usted, sin prisa.'
+          : 'Hola, $name. Soy senss. Estoy aquí con usted, sin prisa.');
+    }
     await _present();
   }
 
