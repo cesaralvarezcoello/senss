@@ -8,8 +8,10 @@ import '../../state/memory_provider.dart';
 import 'activity_kit.dart';
 import 'emotion_guess_screen.dart';
 import 'match_pairs_screen.dart';
+import 'pinpoint_screen.dart';
 import 'puzzle_screen.dart';
 import 'tell_me_screen.dart';
+import 'timeline_screen.dart';
 import 'voice_to_memory_screen.dart';
 import 'who_is_face_screen.dart';
 import 'who_is_it_screen.dart';
@@ -91,6 +93,24 @@ class ActivitiesHubScreen extends StatelessWidget {
         enabled: feed.isNotEmpty,
         need: 'Añade al menos un recuerdo.',
         builder: () => TellMeScreen(feed: feed),
+      ),
+      _Activity(
+        icon: Icons.lightbulb_rounded,
+        color: const Color(0xFFF76B15),
+        title: 'Adivina quién',
+        subtitle: 'Descúbrelo con pistas',
+        enabled: authors.length >= 2,
+        need: 'Graba voces de al menos 2 personas.',
+        builder: () => PinpointScreen(feed: feed),
+      ),
+      _Activity(
+        icon: Icons.timeline_rounded,
+        color: const Color(0xFF0091FF),
+        title: 'Ordena tu historia',
+        subtitle: 'De lo más antiguo a lo nuevo',
+        enabled: feed.length >= 3,
+        need: 'Añade al menos 3 recuerdos.',
+        builder: () => TimelineScreen(feed: feed),
       ),
     ];
 
