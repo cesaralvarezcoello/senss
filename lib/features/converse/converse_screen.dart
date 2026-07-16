@@ -284,7 +284,7 @@ class _ConverseScreenState extends State<ConverseScreen>
     await _tts.speak(text);
     // Piso de tiempo para que el subtítulo se pueda leer (y en web, donde el
     // TTS puede no bloquear, la conversación mantiene su ritmo).
-    final floor = (text.length * 55).clamp(1200, 6000);
+    final floor = (text.length * 42).clamp(900, 4500);
     final left = floor - sw.elapsedMilliseconds;
     if (left > 0) await Future<void>.delayed(Duration(milliseconds: left));
     if (mounted && _phase == _Phase.speaking) {

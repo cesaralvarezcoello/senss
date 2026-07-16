@@ -49,6 +49,5 @@ class AppCopy {
   String get playTitle =>
       p.isSenior ? 'Juega con tus recuerdos' : 'Juega con tus recuerdos';
 
-  /// Bienvenida con concordancia de género.
-  String get welcome => p.gendered('Bienvenido', 'Bienvenida', 'Te damos la bienvenida');
+  String get welcome => 'Te damos la bienvenida';
 }

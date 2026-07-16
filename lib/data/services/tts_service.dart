@@ -15,7 +15,7 @@ class TtsService {
       // Con esto, speak() completa su Future cuando termina de hablar.
       await _tts.awaitSpeakCompletion(true);
       await _tts.setLanguage('es-ES');
-      await _tts.setSpeechRate(0.44); // pausado y claro.
+      await _tts.setSpeechRate(0.55); // ritmo natural, claro pero sin arrastrar.
       await _tts.setPitch(1.0);
       await _tts.setVolume(1.0);
     } catch (_) {

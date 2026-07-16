@@ -35,7 +35,7 @@ void main() {
   // Perfil con la bienvenida ya vista, para que arranque en el modo paciente.
   SharedPreferences.setMockInitialValues({
     'senss_profile': jsonEncode(
-        {'onboarded': true, 'configured': true, 'name': '', 'age': 1, 'gender': 2}),
+        {'onboarded': true, 'configured': true, 'name': '', 'age': 1}),
   });
 
   testWidgets('arranca en el modo paciente y muestra el estado vacío',

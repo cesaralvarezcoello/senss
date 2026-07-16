@@ -2,12 +2,9 @@
 /// de textos, tamaños e iconos según edad y género.
 enum AgeGroup { young, adult, senior }
 
-enum Gender { male, female, unspecified }
-
 class Profile {
   final String name;
   final AgeGroup age;
-  final Gender gender;
 
   /// Si la familia ya configuró el perfil (para no volver a preguntar).
   final bool configured;
@@ -23,7 +20,6 @@ class Profile {
   const Profile({
     this.name = '',
     this.age = AgeGroup.adult,
-    this.gender = Gender.unspecified,
     this.configured = false,
     this.onboarded = false,
     this.memorySupport = false,
@@ -52,24 +48,15 @@ class Profile {
   /// Nº de opciones en los juegos: con memoria frágil o tercera edad, menos (2).
   int get choiceCount => (isSenior || memorySupport) ? 2 : 3;
 
-  /// Elige la variante según género (masculino / femenino / neutro).
-  String gendered(String m, String f, String n) => switch (gender) {
-        Gender.male => m,
-        Gender.female => f,
-        Gender.unspecified => n,
-      };
-
   Profile copyWith(
           {String? name,
           AgeGroup? age,
-          Gender? gender,
           bool? configured,
           bool? onboarded,
           bool? memorySupport}) =>
       Profile(
         name: name ?? this.name,
         age: age ?? this.age,
-        gender: gender ?? this.gender,
         configured: configured ?? this.configured,
         onboarded: onboarded ?? this.onboarded,
         memorySupport: memorySupport ?? this.memorySupport,
@@ -78,7 +65,6 @@ class Profile {
   Map<String, Object?> toJson() => {
         'name': name,
         'age': age.index,
-        'gender': gender.index,
         'configured': configured,
         'onboarded': onboarded,
         'memory_support': memorySupport,
@@ -87,7 +73,6 @@ class Profile {
   factory Profile.fromJson(Map<String, Object?> j) => Profile(
         name: j['name'] as String? ?? '',
         age: AgeGroup.values[(j['age'] as int?) ?? AgeGroup.adult.index],
-        gender: Gender.values[(j['gender'] as int?) ?? Gender.unspecified.index],
         configured: j['configured'] as bool? ?? false,
         onboarded: j['onboarded'] as bool? ?? false,
         memorySupport: j['memory_support'] as bool? ?? false,

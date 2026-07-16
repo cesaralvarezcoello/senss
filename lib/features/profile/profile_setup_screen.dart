@@ -20,7 +20,6 @@ class ProfileSetupScreen extends StatefulWidget {
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   late final TextEditingController _name;
   late AgeGroup _age;
-  late Gender _gender;
   late bool _memory;
 
   @override
@@ -29,7 +28,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final p = context.read<ProfileStore>().profile;
     _name = TextEditingController(text: p.name);
     _age = p.age;
-    _gender = p.gender;
     _memory = p.memorySupport;
   }
 
@@ -45,7 +43,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       store.profile.copyWith(
         name: _name.text.trim(),
         age: _age,
-        gender: _gender,
         configured: true,
         memorySupport: _memory,
       ),
@@ -121,29 +118,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               selected: _age == AgeGroup.young,
               onTap: () => setState(() => _age = AgeGroup.young),
             ),
-            const SizedBox(height: AppSpace.xl),
-            const AppText('Género', variant: AppTextVariant.titleM),
-            const SizedBox(height: AppSpace.md),
-            Wrap(
-              spacing: AppSpace.sm,
-              children: [
-                _GenderChip(
-                  label: 'Mujer',
-                  selected: _gender == Gender.female,
-                  onTap: () => setState(() => _gender = Gender.female),
-                ),
-                _GenderChip(
-                  label: 'Hombre',
-                  selected: _gender == Gender.male,
-                  onTap: () => setState(() => _gender = Gender.male),
-                ),
-                _GenderChip(
-                  label: 'Prefiero no decir',
-                  selected: _gender == Gender.unspecified,
-                  onTap: () => setState(() => _gender = Gender.unspecified),
-                ),
-              ],
-            ),
             const SizedBox(height: AppSpace.xxl),
             AppButton(label: 'Guardar', icon: Icons.check_rounded, onPressed: _save),
           ],
@@ -196,34 +170,6 @@ class _AgeCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _GenderChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _GenderChip(
-      {required this.label, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpace.sm),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? c.accent : c.surfaceSoft,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: selected ? c.accent : c.line),
-        ),
-        child: AppText(label,
-            variant: AppTextVariant.label,
-            color: selected ? c.onAccent : c.ink),
       ),
     );
   }
