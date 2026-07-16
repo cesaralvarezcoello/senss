@@ -571,12 +571,14 @@ class _MomentScreenState extends State<MomentScreen> {
     final voices = m.audios.length;
     final showVoices = voices >= 1 && voices <= 8;
     final slots = (showVoices ? voices : 0) + 1; // +1 = burbuja de añadir.
-    final base = (cardW * 0.17).clamp(42.0, 66.0);
-    final rx = cardW * 0.42;
-    final ry = cardH * 0.42;
+    final base = (cardW * 0.17).clamp(42.0, 64.0);
+    // Anillo desplazado hacia arriba y arco más estrecho: las burbujas se
+    // agrupan en la mitad superior y los lados, dejando libre el pie (título).
+    final rx = cardW * 0.44;
+    final ry = cardH * 0.40;
     final cx = cardW / 2;
-    final cy = cardH / 2;
-    const used = 2 * pi * (240 / 360); // arco de 240°, libre el pie (título).
+    final cy = cardH * 0.45;
+    const used = 2 * pi * (210 / 360);
 
     Offset at(int i) {
       final frac = slots == 1 ? 0.5 : i / (slots - 1);
