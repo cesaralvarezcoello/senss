@@ -51,14 +51,14 @@ class _ConverseScreenState extends State<ConverseScreen>
   bool _multiVoice = false;
 
   static const _questions = [
-    '¿La recuerdas?',
-    '¿Qué sientes al verla?',
-    '¿Quién crees que te acompaña aquí?',
-    '¿Te gustó escuchar esa voz?',
+    '¿La recuerda?',
+    '¿Qué siente al verla?',
+    '¿Quién cree que la acompaña aquí?',
+    '¿Le gustó escuchar esa voz?',
   ];
   static const _affirms = [
     'Qué bonito.',
-    'Me alegra escucharte.',
+    'Me alegra escucharle.',
     'Gracias por contarme.',
     'Qué recuerdo tan lindo.',
   ];
@@ -100,49 +100,91 @@ class _ConverseScreenState extends State<ConverseScreen>
   Future<void> _start() async {
     final name = _profile.name.trim();
     await _say(name.isEmpty
-        ? 'Hola. Soy senss. Estoy aquí contigo, sin prisa.'
-        : 'Hola, $name. Soy senss. Estoy aquí contigo, sin prisa.');
+        ? 'Hola. Soy senss. Estoy aquí con usted, sin prisa.'
+        : 'Hola, $name. Soy senss. Estoy aquí con usted, sin prisa.');
     await _present();
   }
 
+  /// Presenta el recuerdo hablando: identifica de quién es y **pregunta** antes
+  /// de reproducir. Al decir "sí" (o ante cualquier respuesta cálida), suena.
   Future<void> _present() async {
     if (!mounted) return;
     setState(() {}); // refresca la foto de fondo
     final m = _m;
-    await _say('Mira este recuerdo.');
-    if (m.memory.title.trim().isNotEmpty) {
-      await _say('Se llama: ${m.memory.title.trim()}.');
+
+    if (m.audios.isEmpty) {
+      if (m.memory.title.trim().isNotEmpty) {
+        await _say('Este recuerdo se llama: ${m.memory.title.trim()}.');
+      }
+      await _say('¿Qué ve en esta foto? Cuénteme.');
+      await _autoListen();
+      return;
     }
-    if (m.audios.isNotEmpty) {
-      final a = m.audios.first;
-      final (n, r) = _split(a.authorName);
-      await _say('Escucha, $n te dejó su voz.');
-      await _playVoice(a);
-      await _say(r.isEmpty ? 'Esa fue $n.' : 'Esa fue $n, $r.');
-      await _say(_questions[_qi++ % _questions.length]);
-    } else {
-      await _say('Cuéntame, ¿qué ves en esta foto?');
+
+    // Identifica a la persona de la voz: "Esta foto es de su nieto Juan."
+    final (n, r) = _split(m.audios.first.authorName);
+    final rel = _possessive(r);
+    if (rel.isNotEmpty && n.isNotEmpty) {
+      await _say('Esta foto es de $rel $n.');
+    } else if (n.isNotEmpty) {
+      await _say('Esta foto es de $n.');
+    } else if (m.memory.title.trim().isNotEmpty) {
+      await _say('Este recuerdo se llama: ${m.memory.title.trim()}.');
     }
+
+    // Pregunta antes de reproducir.
+    await _say(m.audios.length > 1
+        ? '¿Quiere escuchar sus recuerdos?'
+        : '¿Quiere escuchar su voz?');
+    final text = await _listen();
+
+    // Ruteo cálido y errorless: "no" salta; un nombre pone esa voz; cualquier
+    // otra cosa (sí, silencio, algo ambiguo) reproduce — vino a escuchar.
+    if (_intentOf(text) == _Intent.no) {
+      await _say('Está bien, sin prisa.');
+      await _offerNext();
+      return;
+    }
+    if (text != null) {
+      final v = _findVoice(text);
+      if (v != null) {
+        await _playNamedVoice(v.$1, v.$2);
+        return;
+      }
+    }
+    if (_intentOf(text) == _Intent.next) {
+      await _nextMemory();
+      return;
+    }
+    await _say('Con mucho cariño.');
+    await _playAll(m);
+    await _say(_questions[_qi++ % _questions.length]);
     await _autoListen();
   }
 
   Future<void> _autoListen() async {
+    final text = await _listen();
     if (!mounted) return;
+    await _handle(text);
+  }
+
+  /// Escucha una vez, mostrando el estado en el orbe y el subtítulo.
+  Future<String?> _listen() async {
+    if (!mounted) return null;
     setState(() {
       _phase = _Phase.listening;
-      _caption = 'Te escucho…';
+      _caption = 'Le escucho…';
     });
     final text = await _listenOnce();
-    if (!mounted) return;
-    setState(() => _phase = _Phase.idle);
-    await _handle(text);
+    if (mounted) setState(() => _phase = _Phase.idle);
+    return text;
   }
 
   Future<void> _handle(String? text) async {
     final intent = _intentOf(text);
     // "No quiero / basta" se respeta antes que nada.
     if (intent == _Intent.no) {
-      await _say('Está bien. Descansa. Aquí estaré cuando quieras.');
+      await _say('Está bien. Descanse. Aquí estaré cuando quiera.');
       _end();
       return;
     }
@@ -163,8 +205,8 @@ class _ConverseScreenState extends State<ConverseScreen>
         return;
       case _Intent.again:
         if (_m.audios.isNotEmpty) {
-          await _say('Claro, escúchala otra vez.');
-          await _playVoice(_m.audios.first);
+          await _say('Claro, escúchela otra vez.');
+          await _playAll(_m);
           await _offerNext();
         } else {
           await _nextMemory();
@@ -173,9 +215,12 @@ class _ConverseScreenState extends State<ConverseScreen>
       case _Intent.who:
         if (_m.audios.isNotEmpty) {
           final (n, r) = _split(_m.audios.first.authorName);
-          await _say(r.isEmpty ? 'Es $n. Te quiere mucho.' : 'Es $n, $r. Te quiere mucho.');
+          final rel = _possessive(r);
+          await _say(rel.isEmpty
+              ? 'Es $n. Le quiere mucho.'
+              : 'Es $rel $n. Le quiere mucho.');
         } else {
-          await _say('Es una persona que te quiere.');
+          await _say('Es una persona que le quiere.');
         }
         await _offerNext();
         return;
@@ -185,10 +230,10 @@ class _ConverseScreenState extends State<ConverseScreen>
         return;
       case _Intent.unknown:
         if (text == null) {
-          await _say('Cuando quieras, toca "Hablar" y me cuentas.');
+          await _say('Cuando quiera, toque "Hablar" y me cuenta.');
           _idle();
         } else {
-          await _say('Qué bonito lo que dices. Gracias por compartirlo.');
+          await _say('Qué bonito lo que dice. Gracias por compartirlo.');
           await _offerNext();
         }
         return;
@@ -197,8 +242,8 @@ class _ConverseScreenState extends State<ConverseScreen>
 
   Future<void> _offerNext() async {
     await _say(_multiVoice
-        ? '¿Vemos otro recuerdo, o quieres escuchar a alguien? Dime un nombre.'
-        : '¿Vemos otro recuerdo? Di "otra", o toca la flecha.');
+        ? '¿Vemos otro recuerdo, o quiere escuchar a alguien? Dígame un nombre.'
+        : '¿Vemos otro recuerdo? Diga "otra", o toque la flecha.');
     await _autoListen();
   }
 
@@ -252,6 +297,33 @@ class _ConverseScreenState extends State<ConverseScreen>
     if (mounted && _phase == _Phase.speaking) {
       setState(() => _phase = _Phase.idle);
     }
+  }
+
+  /// Reproduce en secuencia todas las voces del recuerdo (sus "recuerdos").
+  Future<void> _playAll(MemoryWithAudios m) async {
+    if (m.audios.isEmpty || !mounted) return;
+    setState(() => _phase = _Phase.speaking);
+    try {
+      await _player.playSequence(m.audios.map((a) => a.audioPath).toList());
+    } catch (_) {}
+    var total = 0;
+    for (final a in m.audios) {
+      total += a.durationMs.clamp(1000, 15000) + 400;
+    }
+    await Future<void>.delayed(Duration(milliseconds: total.clamp(1200, 90000)));
+    if (mounted && _phase == _Phase.speaking) {
+      setState(() => _phase = _Phase.idle);
+    }
+  }
+
+  /// Convierte el parentesco a tercera persona: "tu nieto" → "su nieto".
+  static String _possessive(String rel) {
+    var r = rel.trim();
+    if (r.isEmpty) return '';
+    r = r.replaceFirst(
+        RegExp(r'^(tu|mi|su)\s+', caseSensitive: false), 'su ');
+    if (!RegExp(r'^su\s', caseSensitive: false).hasMatch(r)) r = 'su $r';
+    return r;
   }
 
   Future<String?> _listenOnce() async {
@@ -358,13 +430,16 @@ class _ConverseScreenState extends State<ConverseScreen>
     if (audio < 0 || audio >= m.audios.length) return;
     final a = m.audios[audio];
     final (n, r) = _split(a.authorName);
+    final rel = _possessive(r);
     if (mem != _index) {
       _index = mem;
       if (mounted) setState(() {}); // cambia la foto de fondo al recuerdo suyo
     }
-    await _say(r.isEmpty ? 'Claro, aquí está la voz de $n.' : 'Claro, aquí está $n, $r.');
+    await _say(rel.isEmpty
+        ? 'Claro, aquí está la voz de $n.'
+        : 'Claro, aquí está $rel $n.');
     await _playVoice(a);
-    await _say(r.isEmpty ? 'Esa fue $n.' : 'Esa fue $n, $r.');
+    await _say(rel.isEmpty ? 'Esa fue $n.' : 'Esa fue $rel $n.');
     await _offerNext();
   }
 

@@ -48,6 +48,7 @@ class _MomentScreenState extends State<MomentScreen> {
   Color _amb2 = const Color(0xFFC7562F);
   Profile _profile = const Profile();
   List<Person> _people = const [];
+  bool _autoConversed = false;
   AppCopy _copy = const AppCopy(Profile());
   final _rand = Random();
   bool _invite = false;
@@ -83,7 +84,9 @@ class _MomentScreenState extends State<MomentScreen> {
 
   void _onMemoryShown(MemoryWithAudios m) {
     _extractColor(m.memory.photoPath);
-    if (m.audios.isNotEmpty) {
+    // Con Alzheimer, el audio lo lleva el modo conversación (que se abre solo):
+    // el Momento no auto-reproduce para no pisarse con él.
+    if (m.audios.isNotEmpty && !_profile.memorySupport) {
       // En web se carga sin arrancar (el navegador bloquea el autoplay sin
       // gesto); el primer toque de play lo inicia. En móvil arranca solo.
       _player.playSequence(m.audios.map((a) => a.audioPath).toList(),
@@ -253,6 +256,15 @@ class _MomentScreenState extends State<MomentScreen> {
       );
     }
     if (feed.isEmpty) return _empty();
+
+    // Si la persona tiene Alzheimer, senss le habla al abrir: entra solo al modo
+    // conversación (una vez por sesión; "Descansar" vuelve aquí sin reabrirlo).
+    if (_profile.memorySupport && !_autoConversed) {
+      _autoConversed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _converse();
+      });
+    }
 
     final index = _index.clamp(0, feed.length - 1);
     final m = feed[index];
